@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>订阅规则</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #f5f5f7; color: #1d1d1f;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .card {
+    width: min(560px, 92vw); background: #fff; border-radius: 20px; padding: 36px 32px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, .06);
+  }
+  h1 { font-size: 28px; font-weight: 600; letter-spacing: -.02em; margin: 0 0 6px; }
+  .desc { margin: 0 0 28px; color: #86868b; font-size: 15px; }
+  label { display: block; font-size: 13px; color: #86868b; margin: 0 0 8px; }
+  input {
+    width: 100%; padding: 13px 14px; font-size: 15px; color: inherit; background: #fff;
+    border: 1px solid #d2d2d7; border-radius: 12px; outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  input:focus { border-color: #0071e3; box-shadow: 0 0 0 4px rgba(0, 113, 227, .15); }
+  input[readonly] { background: #f5f5f7; }
+  .btns { display: flex; gap: 12px; margin-top: 16px; }
+  button {
+    flex: 1; padding: 12px 16px; font-size: 15px; font-weight: 500; border: 0; border-radius: 980px;
+    cursor: pointer; transition: opacity .2s, transform .1s;
+  }
+  button:active { transform: scale(.98); }
+  button:disabled { opacity: .5; cursor: default; }
+  .primary { background: #0071e3; color: #fff; }
+  .secondary { background: #e8e8ed; color: #1d1d1f; }
+  .danger { background: #e8e8ed; color: #ff3b30; }
+  .out { display: none; margin-top: 28px; padding-top: 24px; border-top: 1px solid #e8e8ed; }
+  .row { display: flex; gap: 8px; }
+  .row button { flex: 0 0 auto; }
+  .msg { min-height: 20px; margin-top: 14px; font-size: 13px; color: #ff3b30; }
+  .msg.ok { color: #34c759; }
+  .hint { margin: 8px 0 0; font-size: 12px; color: #86868b; }
+  .steps { margin: 0 0 28px; padding: 16px 18px; background: #f5f5f7; border-radius: 14px; font-size: 14px; line-height: 1.7; }
+  .steps ol { margin: 0; padding-left: 20px; }
+  .steps b { font-weight: 600; }
+  .switch { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 20px 0 0; color: inherit; font-size: inherit; cursor: pointer; }
+  .switch .t { font-size: 15px; }
+  .switch .d { font-size: 12px; color: #86868b; margin-top: 2px; }
+  .switch input { display: none; }
+  .switch i { flex: 0 0 auto; position: relative; width: 51px; height: 31px; border-radius: 31px; background: #e9e9eb; transition: background .25s; }
+  .switch i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.2); transition: transform .25s; }
+  .switch input:checked + i { background: #34c759; }
+  .switch input:checked + i::after { transform: translateX(20px); }
+  .faq { margin-top: 28px; padding-top: 20px; border-top: 1px solid #e8e8ed; }
+  .faq h2 { font-size: 17px; font-weight: 600; margin: 0 0 8px; }
+  details { padding: 12px 0; border-bottom: 1px solid #e8e8ed; }
+  details:last-child { border-bottom: 0; }
+  summary { cursor: pointer; font-size: 15px; list-style: none; display: flex; justify-content: space-between; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; color: #86868b; }
+  details[open] summary::after { content: "−"; }
+  details p { margin: 8px 0 0; font-size: 14px; color: #6e6e73; line-height: 1.6; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #000; color: #f5f5f7; }
+    .card { background: #1c1c1e; box-shadow: none; }
+    input { background: #2c2c2e; border-color: #3a3a3c; }
+    input[readonly] { background: #2c2c2e; }
+    .secondary, .danger { background: #3a3a3c; color: #f5f5f7; }
+    .danger { color: #ff453a; }
+    .out, .faq, details { border-color: #3a3a3c; }
+    .steps { background: #2c2c2e; }
+    .switch i { background: #39393d; }
+    details p { color: #a1a1a6; }
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>订阅规则</h1>
+  <p class="desc">给你的机场订阅自动加上分流规则：国内直连、国外走代理、屏蔽广告。节点不变。</p>
+
+  <div class="steps">
+    <ol>
+      <li>到机场后台复制 <b>Clash 格式</b>的订阅地址</li>
+      <li>粘贴到下方，点 <b>生成地址</b></li>
+      <li>复制新地址，在 Clash 客户端里 <b>导入订阅</b></li>
+      <li>以后照常更新订阅即可，节点和规则都会自动同步</li>
+    </ol>
+  </div>
+
+  <label for="sub">原订阅地址</label>
+  <input id="sub" type="url" placeholder="https://example.com/sub?...&format=clash" autocomplete="off" spellcheck="false">
+  <p class="hint">需为 Clash（YAML）格式，JMS 订阅地址末尾带 <code>format=clash</code>。</p>
+  <div class="btns">
+    <button class="primary" id="gen">生成地址</button>
+    <button class="danger" id="reset">重置地址</button>
+  </div>
+
+  <div class="out" id="out">
+    <label for="link">新订阅地址</label>
+    <div class="row">
+      <input id="link" readonly>
+      <button class="secondary" id="copy">复制</button>
+    </div>
+    <label class="switch">
+      <div>
+        <div class="t">规则文件从本服务器下载</div>
+        <div class="d">国内网络打不开 jsDelivr 时开启，切换后需重新复制地址</div>
+      </div>
+      <input type="checkbox" id="local">
+      <i></i>
+    </label>
+  </div>
+  <div class="msg" id="msg"></div>
+
+  <div class="faq">
+    <h2>常见问题</h2>
+    <details>
+      <summary>支持哪些客户端？</summary>
+      <p>需要 mihomo（Clash Meta）内核：Windows / macOS 用 Clash Verge Rev，Android 用 FlClash 或 Clash Meta for Android，iOS 用 Stash。原版 Clash 已停更，不支持 VLESS 等新协议。</p>
+    </details>
+    <details>
+      <summary>会改动我的节点吗？</summary>
+      <p>不会。节点原样来自你的订阅，本服务只添加分组和分流规则。流量信息也会照常显示。</p>
+    </details>
+    <details>
+      <summary>新地址泄露了怎么办？</summary>
+      <p>输入原订阅地址，点「重置地址」。旧地址立即失效，把新地址重新导入客户端即可。</p>
+    </details>
+    <details>
+      <summary>重复点生成会怎样？</summary>
+      <p>同一个原订阅永远得到同一个地址，不会失效，可以放心再次获取。</p>
+    </details>
+    <details>
+      <summary>「从本服务器下载」是什么？</summary>
+      <p>分流规则由客户端每天自动更新，默认从 jsDelivr 下载。jsDelivr 在部分地区或网络下访问不稳定，可能导致规则下载失败、分流不生效。开启后改从本服务器下载，服务器会定期缓存最新规则。如果默认方式正常，无需开启。</p>
+    </details>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  let token = '';
+
+  $('local').checked = localStorage.getItem('rules') === 'local';
+
+  function renderLink() {
+    if (!token) return;
+    $('link').value = location.origin + '/clash?token=' + token + ($('local').checked ? '&rules=local' : '');
+  }
+
+  function show(text, ok) {
+    $('msg').textContent = text;
+    $('msg').className = ok ? 'msg ok' : 'msg';
+  }
+
+  async function submit(path, confirmText) {
+    const subUrl = $('sub').value.trim();
+    if (!subUrl) return show('请输入订阅地址');
+    if (confirmText && !confirm(confirmText)) return;
+
+    $('gen').disabled = $('reset').disabled = true;
+    show('');
+    try {
+      const r = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sub_url: subUrl }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || r.statusText);
+      token = d.token;
+      renderLink();
+      $('out').style.display = 'block';
+      show(path === '/api/reset' ? '已重置，旧地址已失效' : '', true);
+    } catch (e) {
+      show(e.message);
+    } finally {
+      $('gen').disabled = $('reset').disabled = false;
+    }
+  }
+
+  $('local').onchange = () => {
+    localStorage.setItem('rules', $('local').checked ? 'local' : '');
+    renderLink();
+    show('地址已更新，请重新复制', true);
+  };
+  $('gen').onclick = () => submit('/api/token');
+  $('reset').onclick = () => submit('/api/reset', '重置后旧地址会立即失效，确定吗？');
+  $('copy').onclick = async () => {
+    const link = $('link');
+    try {
+      await navigator.clipboard.writeText(link.value);
+    } catch {
+      link.select();
+      document.execCommand('copy');
+    }
+    show('已复制', true);
+  };
+</script>
+</body>
+</html>

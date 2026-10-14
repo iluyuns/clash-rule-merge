@@ -1,0 +1,55 @@
+# x- 开头的 key 不会输出
+x-anchors:
+  domain: &domain {type: http, interval: 86400, behavior: domain, format: mrs}
+  ipcidr: &ipcidr {type: http, interval: 86400, behavior: ipcidr, format: mrs}
+
+proxy-groups:
+  - {name: 节点选择, type: select, proxies: [自动选择, DIRECT], include-all-proxies: true}
+  - {name: 自动选择, type: url-test, include-all-proxies: true, url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 50}
+  - {name: AI, type: select, proxies: [节点选择, 自动选择], include-all-proxies: true}
+  - {name: 谷歌, type: select, proxies: [节点选择, 自动选择], include-all-proxies: true}
+  - {name: 油管, type: select, proxies: [节点选择, 自动选择], include-all-proxies: true}
+  - {name: 电报, type: select, proxies: [节点选择, 自动选择], include-all-proxies: true}
+  - {name: 奈飞, type: select, proxies: [节点选择, 自动选择], include-all-proxies: true}
+  - {name: 微软, type: select, proxies: [DIRECT, 节点选择]}
+  - {name: 苹果, type: select, proxies: [DIRECT, 节点选择]}
+  - {name: 广告拦截, type: select, proxies: [REJECT, DIRECT]}
+  - {name: 全球直连, type: select, proxies: [DIRECT, 节点选择]}
+  - {name: 漏网之鱼, type: select, proxies: [节点选择, DIRECT]}
+
+rule-providers:
+  private:     {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/private.mrs"}
+  ads:         {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-ads-all.mrs"}
+  ai:          {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-ai-!cn.mrs"}
+  youtube:     {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/youtube.mrs"}
+  google:      {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/google.mrs"}
+  telegram:    {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/telegram.mrs"}
+  netflix:     {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/netflix.mrs"}
+  microsoft:   {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.mrs"}
+  apple:       {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/apple.mrs"}
+  proxy:       {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/geolocation-!cn.mrs"}
+  cn:          {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/cn.mrs"}
+  private_ip:  {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/private.mrs"}
+  telegram_ip: {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/telegram.mrs"}
+  google_ip:   {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/google.mrs"}
+  netflix_ip:  {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/netflix.mrs"}
+  cn_ip:       {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/cn.mrs"}
+
+rules:
+  - RULE-SET,private,DIRECT
+  - RULE-SET,ads,广告拦截
+  - RULE-SET,ai,AI
+  - RULE-SET,youtube,油管
+  - RULE-SET,google,谷歌
+  - RULE-SET,telegram,电报
+  - RULE-SET,netflix,奈飞
+  - RULE-SET,microsoft,微软
+  - RULE-SET,apple,苹果
+  - RULE-SET,proxy,节点选择
+  - RULE-SET,cn,全球直连
+  - RULE-SET,private_ip,DIRECT,no-resolve
+  - RULE-SET,telegram_ip,电报,no-resolve
+  - RULE-SET,google_ip,谷歌,no-resolve
+  - RULE-SET,netflix_ip,奈飞,no-resolve
+  - RULE-SET,cn_ip,全球直连
+  - MATCH,漏网之鱼

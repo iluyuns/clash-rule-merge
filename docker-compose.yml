@@ -1,0 +1,18 @@
+name: clash-rule-merge
+
+services:
+  clash-rule-merge:
+    image: iluyuns/clash-rule-merge:latest
+    container_name: clash-rule-merge
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ALLOW_HOSTS: jmssub.net
+      RULE_TTL: 12h
+      # PUBLIC_URL: https://sub.example.com
+    volumes:
+      - data:/data
+
+volumes:
+  data:

@@ -1,0 +1,6 @@
+.git
+.github
+Dockerfile
+docker-compose.yml
+subs.json
+cache/

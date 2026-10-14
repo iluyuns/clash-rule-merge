@@ -1,0 +1,5 @@
+subs.json
+cache/
+*.tmp
+clash-rule-merge
+clash-rule-merge.exe
