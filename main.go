@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	_ "embed"
 	"encoding/hex"
@@ -201,7 +202,11 @@ func main() {
 			return
 		}
 
-		if v := header.Get("Subscription-Userinfo"); v != "" {
+		v := header.Get("Subscription-Userinfo")
+		if v == "" {
+			v = jmsUsage(subURL)
+		}
+		if v != "" {
 			w.Header().Set("Subscription-Userinfo", v)
 		}
 		name := "Clash"
@@ -230,6 +235,46 @@ func main() {
 
 	log.Printf("listen on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, nil))
+}
+
+// JMS 订阅不带 Subscription-Userinfo，用流量接口补上
+func jmsUsage(subURL string) string {
+	u, err := url.Parse(subURL)
+	if err != nil || !strings.HasSuffix(u.Path, "/getsub.php") {
+		return ""
+	}
+	if h := u.Hostname(); !strings.Contains(h, "jms") && !strings.Contains(h, "justmysocks") {
+		return ""
+	}
+	q := u.Query()
+	if q.Get("service") == "" || q.Get("id") == "" {
+		return ""
+	}
+	host := os.Getenv("JMS_BW_HOST")
+	if host == "" {
+		host = "justmysocks6.net"
+	}
+	api := "https://" + host + "/members/getbwcounter.php?" +
+		url.Values{"service": {q.Get("service")}, "id": {q.Get("id")}}.Encode()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, api, nil)
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("jms usage: %v", err)
+		return ""
+	}
+	defer resp.Body.Close()
+
+	var bw struct {
+		Limit int64 `json:"monthly_bw_limit_b"`
+		Used  int64 `json:"bw_counter_b"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 4096)).Decode(&bw); err != nil || bw.Limit == 0 {
+		return ""
+	}
+	return fmt.Sprintf("upload=0; download=%d; total=%d", bw.Used, bw.Limit)
 }
 
 func publicBase(r *http.Request) string {

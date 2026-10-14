@@ -115,6 +115,7 @@ go run .
 | `RULE_TTL` | `12h` | 规则缓存有效期 |
 | `PUBLIC_URL` | 自动识别 | 对外访问地址，例如 `https://sub.example.com`，反向代理后建议设置 |
 | `TEMPLATE` | 内置 `template.yaml` | 外部模板路径，每次请求重新读取，修改无需重启 |
+| `JMS_BW_HOST` | `justmysocks6.net` | JMS 流量查询接口域名，用于在客户端显示已用/总流量 |
 
 ## 使用
 
