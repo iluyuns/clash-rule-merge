@@ -50,10 +50,10 @@ docker compose up -d
 
 ```bash
 docker run -d --name clash-rule-merge --restart unless-stopped \
-  -p 8080:8080 \
+  -p 5090:5090 \
   -e ALLOW_HOSTS=jmssub.net \
   -v clash-rule-merge-data:/data \
-  iluyuns/clash-rule-merge:latest
+  iuupub/clash-rule-merge:latest
 ```
 
 更新：`docker compose pull && docker compose up -d`
@@ -68,7 +68,7 @@ go run .
 
 | 环境变量 | 默认值 | 说明 |
 |---|---|---|
-| `LISTEN` | `:8080` | 监听地址 |
+| `LISTEN` | `:5090` | 监听地址 |
 | `ALLOW_HOSTS` | 空（不限制） | 允许的订阅域名，逗号分隔，含子域名。**公网部署强烈建议设置** |
 | `DATA_FILE` | `subs.json`（镜像内 `/data/subs.json`） | token 与订阅地址的映射 |
 | `CACHE_DIR` | `cache`（镜像内 `/data/cache`） | 规则缓存目录 |
@@ -78,7 +78,7 @@ go run .
 
 ## 使用
 
-1. 打开 `http://服务器:8080/`。
+1. 打开 `http://服务器:5090/`。
 2. 粘贴机场的 Clash 格式订阅地址，点「生成地址」。
 3. 复制新地址，在客户端中导入订阅。
 
@@ -103,9 +103,6 @@ go run .
 - `subs.json` 保存了所有订阅地址，请妥善保管，不要提交到仓库。
 - 建议通过 HTTPS 反向代理对外提供服务。
 
-## 发布
-
-推送到 `main` 分支或打 `v*` 标签后，GitHub Actions 自动构建 `linux/amd64`、`linux/arm64` 镜像并推送到 Docker Hub。需在仓库 Secrets 中配置 `DOCKERHUB_USERNAME`、`DOCKERHUB_TOKEN`。
 
 ## License
 

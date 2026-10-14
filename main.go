@@ -102,7 +102,7 @@ func (s *store) issue(subURL string, reset bool) (string, error) {
 func main() {
 	addr := os.Getenv("LISTEN")
 	if addr == "" {
-		addr = ":8080"
+		addr = ":5090"
 	}
 	dataFile := os.Getenv("DATA_FILE")
 	if dataFile == "" {

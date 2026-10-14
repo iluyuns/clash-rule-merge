@@ -13,9 +13,9 @@ RUN apk add --no-cache ca-certificates tzdata \
     && chown app /data
 COPY --from=build /clash-rule-merge /usr/local/bin/clash-rule-merge
 USER app
-ENV LISTEN=:8080 \
+ENV LISTEN=:5090 \
     DATA_FILE=/data/subs.json \
     CACHE_DIR=/data/cache
 VOLUME /data
-EXPOSE 8080
+EXPOSE 5090
 ENTRYPOINT ["clash-rule-merge"]
