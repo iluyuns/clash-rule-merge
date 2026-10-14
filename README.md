@@ -2,6 +2,8 @@
 
 给 Clash（YAML）订阅自动集成分流规则的小服务：节点原样保留，只追加分组和规则。
 
+**部署案例**：<https://crm.minis.app/>（仅供体验，介意订阅地址经过第三方的建议[自行部署](#部署)）
+
 ```
 机场 Clash 订阅 ──► clash-rule-merge ──► 带分流规则的新订阅 ──► Clash 客户端
                      (覆盖 proxy-groups / rule-providers / rules)
@@ -57,6 +59,44 @@ docker run -d --name clash-rule-merge --restart unless-stopped \
 ```
 
 更新：`docker compose pull && docker compose up -d`
+
+### 绑定域名（HTTPS）
+
+以 `sub.example.com` 为例：
+
+1. **DNS**：添加 A 记录 `sub.example.com` → 服务器公网 IP。
+2. **compose**：
+   - 端口改为 `"127.0.0.1:5090:5090"`，只允许本机反向代理访问，不直接暴露 HTTP。
+   - 设置 `PUBLIC_URL: https://sub.example.com`，保证“从本服务器下载规则”生成的地址正确。
+   - `docker compose up -d` 使配置生效。
+3. **反向代理**（二选一）：
+
+   **Caddy**（自动申请、续期证书）`/etc/caddy/Caddyfile`：
+
+   ```
+   sub.example.com {
+       reverse_proxy 127.0.0.1:5090
+   }
+   ```
+
+   **Nginx**（证书可用 certbot 申请）：
+
+   ```nginx
+   server {
+       listen 443 ssl;
+       server_name sub.example.com;
+       ssl_certificate     /etc/letsencrypt/live/sub.example.com/fullchain.pem;
+       ssl_certificate_key /etc/letsencrypt/live/sub.example.com/privkey.pem;
+
+       location / {
+           proxy_pass http://127.0.0.1:5090;
+           proxy_set_header Host $host;
+           proxy_set_header X-Forwarded-Proto $scheme;
+       }
+   }
+   ```
+
+4. 打开 `https://sub.example.com/` 即可使用。防火墙需放行 80、443（Caddy / certbot 申请证书要用 80）。
 
 ### 源码运行
 

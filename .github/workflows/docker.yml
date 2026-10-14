@@ -2,9 +2,7 @@ name: docker
 
 on:
   push:
-    branches: [main]
     tags: ["v*"]
-  workflow_dispatch:
 
 jobs:
   build:
@@ -26,7 +24,7 @@ jobs:
         with:
           images: iuupub/clash-rule-merge
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,format=short
