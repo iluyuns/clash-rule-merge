@@ -143,6 +143,12 @@ go run .
 - `subs.json` 保存了所有订阅地址，请妥善保管，不要提交到仓库。
 - 建议通过 HTTPS 反向代理对外提供服务。
 
+<!-- 
+发布
+git push                    # 推送 dev 分支，不会触发构建
+git tag v1.0.0
+git push origin v1.0.0      # 触发构建，生成 1.0.0、1.0、latest 三个镜像标签 
+-->
 
 ## License
 
