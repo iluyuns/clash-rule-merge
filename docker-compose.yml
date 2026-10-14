@@ -11,8 +11,10 @@ services:
       ALLOW_HOSTS: jmssub.net
       RULE_TTL: 12h
       # PUBLIC_URL: https://sub.example.com
+      # TEMPLATE: /etc/clash-rule-merge/template.yaml
     volumes:
       - data:/data
+      # - ./template.yaml:/etc/clash-rule-merge/template.yaml:ro
 
 volumes:
   data:
