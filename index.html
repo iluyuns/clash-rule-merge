@@ -39,6 +39,9 @@
   .out { display: none; margin-top: 28px; padding-top: 24px; border-top: 1px solid #e8e8ed; }
   .row { display: flex; gap: 8px; }
   .row button { flex: 0 0 auto; }
+  .qr { display: flex; flex-direction: column; align-items: center; margin-top: 16px; }
+  .qr canvas { padding: 8px; background: #fff; border-radius: 12px; }
+  .qr .hint { margin-top: 6px; }
   .msg { min-height: 20px; margin-top: 14px; font-size: 13px; color: #ff3b30; }
   .msg.ok { color: #34c759; }
   .hint { margin: 8px 0 0; font-size: 12px; color: #86868b; }
@@ -104,6 +107,10 @@
       <input id="link" readonly>
       <button class="secondary" id="copy">复制</button>
     </div>
+    <div class="qr">
+      <canvas id="qr"></canvas>
+      <p class="hint">手机客户端扫码导入</p>
+    </div>
     <label class="switch">
       <div>
         <div class="t">规则文件从本服务器下载</div>
@@ -140,6 +147,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
 <script>
   const $ = id => document.getElementById(id);
   let token = '';
@@ -149,6 +157,7 @@
   function renderLink() {
     if (!token) return;
     $('link').value = location.origin + '/clash?token=' + token + ($('local').checked ? '&rules=local' : '');
+    if (window.QRCode) QRCode.toCanvas($('qr'), $('link').value, { width: 180, margin: 1 }, () => {});
   }
 
   function show(text, ok) {
