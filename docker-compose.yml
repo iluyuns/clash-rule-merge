@@ -10,7 +10,7 @@ services:
       # 走反向代理时改为只监听本机
       # - "127.0.0.1:5090:5090"
     environment:
-      ALLOW_HOSTS: jmssub.net
+      # ALLOW_HOSTS: jmssub.net
       RULE_TTL: 12h
       # PUBLIC_URL: https://sub.example.com
       # TEMPLATE: /etc/clash-rule-merge/template.yaml

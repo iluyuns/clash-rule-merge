@@ -53,7 +53,6 @@ docker compose up -d
 ```bash
 docker run -d --name clash-rule-merge --restart unless-stopped \
   -p 5090:5090 \
-  -e ALLOW_HOSTS=jmssub.net \
   -v clash-rule-merge-data:/data \
   iuupub/clash-rule-merge:latest
 ```
@@ -109,7 +108,7 @@ go run .
 | 环境变量 | 默认值 | 说明 |
 |---|---|---|
 | `LISTEN` | `:5090` | 监听地址 |
-| `ALLOW_HOSTS` | 空（不限制） | 允许的订阅域名，逗号分隔，含子域名。**公网部署强烈建议设置** |
+| `ALLOW_HOSTS` | 空（不限制） | 允许的订阅域名，逗号分隔，含子域名。内网地址始终禁止访问 |
 | `DATA_FILE` | `subs.json`（镜像内 `/data/subs.json`） | token 与订阅地址的映射 |
 | `CACHE_DIR` | `cache`（镜像内 `/data/cache`） | 规则缓存目录 |
 | `RULE_TTL` | `12h` | 规则缓存有效期 |

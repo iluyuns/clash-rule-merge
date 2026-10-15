@@ -10,12 +10,14 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -27,7 +29,25 @@ var defaultTemplate []byte
 //go:embed index.html
 var indexHTML []byte
 
-var client = &http.Client{Timeout: 20 * time.Second}
+var client = &http.Client{
+	Timeout: 20 * time.Second,
+	Transport: &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout: 10 * time.Second,
+			// 禁止访问内网
+			Control: func(network, address string, _ syscall.RawConn) error {
+				host, _, _ := net.SplitHostPort(address)
+				ip := net.ParseIP(host)
+				if ip == nil || ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() {
+					return errors.New("禁止访问内网地址")
+				}
+				return nil
+			},
+		}).DialContext,
+		TLSHandshakeTimeout: 10 * time.Second,
+	},
+}
 
 var (
 	cacheDir   = "cache"
@@ -274,7 +294,9 @@ func jmsUsage(subURL string) string {
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 4096)).Decode(&bw); err != nil || bw.Limit == 0 {
 		return ""
 	}
-	return fmt.Sprintf("upload=0; download=%d; total=%d", bw.Used, bw.Limit)
+	// JMS 按 1000 进制，客户端按 1024 显示
+	k := float64(1<<30) / 1e9
+	return fmt.Sprintf("upload=0; download=%d; total=%d", int64(float64(bw.Used)*k), int64(float64(bw.Limit)*k))
 }
 
 func publicBase(r *http.Request) string {
