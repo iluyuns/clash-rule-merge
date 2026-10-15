@@ -183,7 +183,9 @@ func main() {
 			return
 		}
 		if raw, _, err := fetch(subURL); err != nil {
-			reply(http.StatusBadGateway, map[string]string{"error": "拉取订阅失败: " + err.Error()})
+			log.Printf("fetch %s: %v", u.Host, err)
+			// 502 会被 Cloudflare 替换掉错误信息
+			reply(http.StatusBadRequest, map[string]string{"error": "拉取订阅失败: " + err.Error()})
 			return
 		} else if _, err := mergeRules(raw, ""); err != nil {
 			reply(http.StatusBadRequest, map[string]string{"error": err.Error()})
