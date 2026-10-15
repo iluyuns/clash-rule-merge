@@ -363,12 +363,20 @@ func hostAllowed(host string, allow []string) bool {
 }
 
 func fetch(target string) ([]byte, http.Header, error) {
-	resp, err := client.Get(target)
+	req, err := http.NewRequest(http.MethodGet, target, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	req.Header.Set("User-Agent", "clash.meta")
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
+		if resp.Header.Get("Cf-Mitigated") != "" || resp.Header.Get("Cf-Ray") != "" && resp.StatusCode == http.StatusForbidden {
+			return nil, nil, fmt.Errorf("上游返回 %d，被 Cloudflare 拦截", resp.StatusCode)
+		}
 		return nil, nil, fmt.Errorf("上游返回 %d", resp.StatusCode)
 	}
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, 10<<20))
