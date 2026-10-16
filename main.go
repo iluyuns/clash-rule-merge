@@ -30,6 +30,9 @@ var defaultTemplate []byte
 //go:embed index.html
 var indexHTML []byte
 
+//go:embed hf.co.png
+var hfIcon []byte
+
 var client = &http.Client{
 	Timeout: 20 * time.Second,
 	Transport: &http.Transport{
@@ -200,7 +203,7 @@ func main() {
 			// 502 会被 Cloudflare 替换掉错误信息
 			reply(http.StatusBadRequest, map[string]string{"error": "拉取订阅失败: " + err.Error()})
 			return
-		} else if _, err := mergeRules(raw, "", "zh"); err != nil {
+		} else if _, err := mergeRules(raw, "", "zh", ""); err != nil {
 			reply(http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
 		}
@@ -235,7 +238,7 @@ func main() {
 		if lang != "zh" {
 			lang = "en"
 		}
-		out, err := mergeRules(raw, localBase, lang)
+		out, err := mergeRules(raw, localBase, lang, publicBase(r))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -274,6 +277,11 @@ func main() {
 	})
 
 	log.Printf("listen on %s, rate %d/s", addr, rateLimit)
+	http.HandleFunc("/icons/hf.co.png", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Write(hfIcon)
+	})
 	log.Fatal(http.ListenAndServe(addr, newLimiter(rateLimit).wrap(http.DefaultServeMux)))
 }
 
@@ -504,7 +512,7 @@ func loadTemplate() (map[string]any, error) {
 }
 
 // 用模板覆盖上游同名 key；localBase 非空时规则改走本服务器；lang=en 时分组改英文
-func mergeRules(raw []byte, localBase, lang string) ([]byte, error) {
+func mergeRules(raw []byte, localBase, lang, assetBase string) ([]byte, error) {
 	var sub map[string]any
 	if err := yaml.Unmarshal(raw, &sub); err != nil {
 		return nil, fmt.Errorf("订阅不是有效的 Clash YAML: %w", err)
@@ -536,6 +544,7 @@ func mergeRules(raw []byte, localBase, lang string) ([]byte, error) {
 	if len(en) > 0 {
 		renameGroups(sub, en)
 	}
+	absIcons(sub, assetBase)
 	if localBase != "" {
 		providers, _ := sub["rule-providers"].(map[string]any)
 		for name, p := range providers {
@@ -545,6 +554,23 @@ func mergeRules(raw []byte, localBase, lang string) ([]byte, error) {
 		}
 	}
 	return yaml.Marshal(sub)
+}
+
+func absIcons(sub map[string]any, base string) {
+	if base == "" {
+		return
+	}
+	groups, _ := sub["proxy-groups"].([]any)
+	for _, g := range groups {
+		m, ok := g.(map[string]any)
+		if !ok {
+			continue
+		}
+		icon, _ := m["icon"].(string)
+		if strings.HasPrefix(icon, "/") {
+			m["icon"] = base + icon
+		}
+	}
 }
 
 func renameGroups(sub map[string]any, names map[string]string) {

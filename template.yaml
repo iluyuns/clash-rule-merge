@@ -11,6 +11,7 @@ x-en:
   广告拦截: Ad Block
   全球直连: Local
   漏网之鱼: Final
+  Hugging Face 模型: Hugging Face Models
 
 x-anchors:
   domain: &domain {type: http, interval: 86400, behavior: domain, format: mrs}
@@ -24,6 +25,9 @@ proxy-groups:
   - {name: 油管, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/YouTube.png"}
   - {name: 电报, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Telegram.png"}
   - {name: 奈飞, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Netflix.png"}
+  - {name: GitHub, type: select, proxies: [自动选择, 节点选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/GitHub.png"}
+  - {name: Hugging Face, type: select, proxies: [自动选择, 节点选择, DIRECT], include-all: true, icon: "https://huggingface.co/front/assets/huggingface_logo-noborder.svg"}
+  - {name: Hugging Face 模型, type: select, proxies: [DIRECT, 自动选择, 节点选择], include-all: true, icon: "/icons/hf.co.png"}
   - {name: 微软, type: select, proxies: [DIRECT, 节点选择], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png"}
   - {name: 苹果, type: select, proxies: [DIRECT, 节点选择], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple_2.png"}
   - {name: 广告拦截, type: select, proxies: [REJECT, DIRECT], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Advertising.png"}
@@ -50,8 +54,13 @@ rule-providers:
 
 rules:
   - RULE-SET,private,DIRECT
-  - DOMAIN-SUFFIX,hf.co,DIRECT
-  - DOMAIN-SUFFIX,github.com,自动选择
+  - DOMAIN-SUFFIX,hf.co,Hugging Face 模型
+  - DOMAIN-KEYWORD,cdn-lfs,Hugging Face 模型
+  - DOMAIN-SUFFIX,huggingface.co,Hugging Face
+  - DOMAIN-SUFFIX,github.com,GitHub
+  - DOMAIN-SUFFIX,githubusercontent.com,GitHub
+  - DOMAIN-SUFFIX,githubassets.com,GitHub
+  - DOMAIN-SUFFIX,github.io,GitHub
   - RULE-SET,ads,广告拦截
   - RULE-SET,ai,AI
   - RULE-SET,youtube,油管
