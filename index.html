@@ -1,31 +1,112 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>订阅规则</title>
+<title>Clash rules for living in China</title>
+<meta name="description" content="Add routing rules to a Clash, mihomo, or Stash subscription if you live in China. International services use your proxy. Local websites connect directly. Your servers stay unchanged.">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#f3f4f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://crm.minis.app/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="clash-rule-merge">
+<meta property="og:title" content="Clash rules for living in China">
+<meta property="og:description" content="International services use your proxy. Local websites connect directly. Your servers stay unchanged.">
+<meta property="og:url" content="https://crm.minis.app/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Clash rules for living in China">
+<meta name="twitter:description" content="International services use your proxy. Local websites connect directly. Your servers stay unchanged.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "clash-rule-merge",
+  "url": "https://crm.minis.app/",
+  "description": "Add routing rules to a Clash subscription if you live in China. International services use your proxy. Local websites connect directly. Your servers stay unchanged.",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Any",
+  "inLanguage": "en",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
+  "codeRepository": "https://github.com/iluyuns/clash-rule-merge",
+  "license": "https://github.com/iluyuns/clash-rule-merge/blob/main/LICENSE"
+}
+</script>
 <style>
-  :root { color-scheme: light dark; }
+  :root {
+    color-scheme: light dark;
+    --bg: #eef0f3;
+    --card: #fff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --line: #e6e6ea;
+    --fill: #f5f5f7;
+    --blue: #0071e3;
+    --danger: #ff3b30;
+    --ok: #248a3d;
+    --shadow: 0 12px 40px rgba(0, 0, 0, .06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000;
+      --card: #1c1c1e;
+      --text: #f5f5f7;
+      --muted: #98989d;
+      --line: #3a3a3c;
+      --fill: #2c2c2e;
+      --danger: #ff453a;
+      --ok: #30d158;
+      --shadow: none;
+    }
+  }
   * { box-sizing: border-box; }
   body {
     margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
-    background: #f5f5f7; color: #1d1d1f;
+    background:
+      radial-gradient(900px 420px at 50% -10%, rgba(0, 113, 227, .14), transparent 60%),
+      var(--bg);
+    color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
     -webkit-font-smoothing: antialiased;
   }
   .card {
-    width: min(560px, 92vw); background: #fff; border-radius: 20px; padding: 36px 32px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, .06);
+    width: min(600px, 92vw); margin: 28px 0; background: var(--card); border-radius: 24px;
+    padding: 28px 32px 24px; box-shadow: var(--shadow);
   }
-  h1 { font-size: 28px; font-weight: 600; letter-spacing: -.02em; margin: 0 0 6px; }
-  .desc { margin: 0 0 28px; color: #86868b; font-size: 15px; }
-  label { display: block; font-size: 13px; color: #86868b; margin: 0 0 8px; }
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+  .brand { color: inherit; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+  .gh {
+    display: inline-flex; align-items: center; gap: 6px; color: var(--text); text-decoration: none;
+    font-size: 13px; font-weight: 500; padding: 7px 12px; border-radius: 980px; background: var(--fill);
+  }
+  .gh svg { display: block; }
+  .actions { display: flex; align-items: center; gap: 8px; }
+  .langs { display: flex; padding: 2px; background: var(--fill); border-radius: 980px; }
+  .lang { flex: 0 0 auto; background: transparent; color: var(--muted); font-size: 12px; font-weight: 600; padding: 5px 10px; }
+  .lang.on { background: var(--card); color: var(--text); }
+  h1 { font-size: 28px; font-weight: 600; letter-spacing: -.03em; line-height: 1.2; margin: 0 0 8px; }
+  .desc { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.55; }
+  .feats { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; padding: 0; list-style: none; }
+  .feats li { font-size: 12px; color: var(--muted); background: var(--fill); border-radius: 980px; padding: 5px 10px; }
+  .steps { margin: 22px 0; padding: 4px 0; font-size: 14px; line-height: 1.5; }
+  .steps ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+  .steps li { display: flex; gap: 10px; align-items: baseline; }
+  .steps li::before {
+    counter-increment: step; content: counter(step);
+    flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--fill); color: var(--muted); font-size: 12px; font-weight: 600;
+    display: grid; place-items: center;
+  }
+  .steps ol { counter-reset: step; }
+  .steps b { font-weight: 600; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 8px; }
   input {
-    width: 100%; padding: 13px 14px; font-size: 15px; color: inherit; background: #fff;
-    border: 1px solid #d2d2d7; border-radius: 12px; outline: none; transition: border-color .2s, box-shadow .2s;
+    width: 100%; padding: 13px 14px; font-size: 15px; color: inherit; background: var(--card);
+    border: 1px solid var(--line); border-radius: 12px; outline: none; transition: border-color .2s, box-shadow .2s;
   }
-  input:focus { border-color: #0071e3; box-shadow: 0 0 0 4px rgba(0, 113, 227, .15); }
-  input[readonly] { background: #f5f5f7; }
+  input:focus { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(0, 113, 227, .15); }
+  input[readonly] { background: var(--fill); }
   .btns { display: flex; gap: 12px; margin-top: 16px; }
   button {
     flex: 1; padding: 12px 16px; font-size: 15px; font-weight: 500; border: 0; border-radius: 980px;
@@ -33,81 +114,107 @@
   }
   button:active { transform: scale(.98); }
   button:disabled { opacity: .5; cursor: default; }
-  .primary { background: #0071e3; color: #fff; }
-  .secondary { background: #e8e8ed; color: #1d1d1f; }
-  .danger { background: #e8e8ed; color: #ff3b30; }
-  .out { display: none; margin-top: 28px; padding-top: 24px; border-top: 1px solid #e8e8ed; }
+  .primary { background: var(--blue); color: #fff; }
+  .secondary { background: var(--fill); color: var(--text); }
+  .danger { background: var(--fill); color: var(--danger); }
+  .out { display: none; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
   .row { display: flex; gap: 8px; }
-  .row button { flex: 0 0 auto; }
-  .msg { min-height: 20px; margin-top: 14px; font-size: 13px; color: #ff3b30; }
-  .msg.ok { color: #34c759; }
-  .hint { margin: 8px 0 0; font-size: 12px; color: #86868b; }
-  .steps { margin: 0 0 28px; padding: 16px 18px; background: #f5f5f7; border-radius: 14px; font-size: 14px; line-height: 1.7; }
-  .steps ol { margin: 0; padding-left: 20px; }
-  .steps b { font-weight: 600; }
+  .row button { flex: 0 0 auto; padding-inline: 18px; }
+  .qr { display: flex; flex-direction: column; align-items: center; margin-top: 16px; }
+  .qr canvas { padding: 8px; background: #fff; border-radius: 12px; }
+  .qr .hint { margin-top: 6px; }
+  .msg { min-height: 20px; margin-top: 14px; font-size: 13px; color: var(--danger); }
+  .msg.ok { color: var(--ok); }
+  .hint { margin: 8px 0 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .92em; }
   .switch { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 20px 0 0; color: inherit; font-size: inherit; cursor: pointer; }
-  .switch .t { font-size: 15px; }
-  .switch .d { font-size: 12px; color: #86868b; margin-top: 2px; }
+  .switch .t { font-size: 15px; color: var(--text); }
+  .switch .d { font-size: 12px; color: var(--muted); margin-top: 2px; }
   .switch input { display: none; }
   .switch i { flex: 0 0 auto; position: relative; width: 51px; height: 31px; border-radius: 31px; background: #e9e9eb; transition: background .25s; }
   .switch i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.2); transition: transform .25s; }
   .switch input:checked + i { background: #34c759; }
   .switch input:checked + i::after { transform: translateX(20px); }
-  .faq { margin-top: 28px; padding-top: 20px; border-top: 1px solid #e8e8ed; }
-  .faq h2 { font-size: 17px; font-weight: 600; margin: 0 0 8px; }
-  details { padding: 12px 0; border-bottom: 1px solid #e8e8ed; }
+  .faq { margin-top: 28px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .faq h2 { font-size: 17px; font-weight: 600; margin: 16px 0 4px; }
+  details { padding: 12px 0; border-bottom: 1px solid var(--line); }
   details:last-child { border-bottom: 0; }
-  summary { cursor: pointer; font-size: 15px; list-style: none; display: flex; justify-content: space-between; }
+  summary { cursor: pointer; font-size: 15px; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
   summary::-webkit-details-marker { display: none; }
-  summary::after { content: "+"; color: #86868b; }
+  summary::after { content: "+"; color: var(--muted); }
   details[open] summary::after { content: "−"; }
-  details p { margin: 8px 0 0; font-size: 14px; color: #6e6e73; line-height: 1.6; }
+  details p { margin: 8px 0 0; font-size: 14px; color: var(--muted); line-height: 1.6; }
+  .foot {
+    display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    margin-top: 8px; padding-top: 16px; border-top: 1px solid var(--line);
+    font-size: 12px; color: var(--muted);
+  }
+  .foot a { color: var(--text); }
+  @media (max-width: 520px) {
+    .card { padding: 22px 18px 18px; }
+    h1 { font-size: 24px; }
+  }
   @media (prefers-color-scheme: dark) {
-    body { background: #000; color: #f5f5f7; }
-    .card { background: #1c1c1e; box-shadow: none; }
-    input { background: #2c2c2e; border-color: #3a3a3c; }
-    input[readonly] { background: #2c2c2e; }
-    .secondary, .danger { background: #3a3a3c; color: #f5f5f7; }
-    .danger { color: #ff453a; }
-    .out, .faq, details { border-color: #3a3a3c; }
-    .steps { background: #2c2c2e; }
     .switch i { background: #39393d; }
-    details p { color: #a1a1a6; }
   }
 </style>
 </head>
 <body>
 <div class="card">
-  <h1>订阅规则</h1>
-  <p class="desc">给你的机场订阅自动加上分流规则：国内直连、国外走代理、屏蔽广告。节点不变。</p>
+  <header class="top">
+    <a class="brand" href="/">clash-rule-merge</a>
+    <div class="actions">
+      <div class="langs" role="group" aria-label="Language">
+        <button type="button" class="lang on" id="lang-en">EN</button>
+        <button type="button" class="lang" id="lang-zh">中文</button>
+      </div>
+      <a class="gh" href="https://github.com/iluyuns/clash-rule-merge" target="_blank" rel="noopener noreferrer">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.7 7.7 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </header>
+
+  <h1 data-i18n="h1">Routing rules for living in China</h1>
+  <p class="desc" data-i18n="desc">A subscription usually only includes servers, so every connection goes through the proxy. If you live in China, this adds rules for Clash, mihomo, and Stash: Google, YouTube, ChatGPT, and other international services use your proxy, local websites connect directly, and common ads are blocked. Your servers are not changed.</p>
+  <ul class="feats">
+    <li data-i18n="f1">International services</li>
+    <li data-i18n="f2">Local sites direct</li>
+    <li data-i18n="f3">Ads blocked</li>
+    <li data-i18n="f4">Servers unchanged</li>
+  </ul>
 
   <div class="steps">
     <ol>
-      <li>到机场后台复制 <b>Clash 格式</b>的订阅地址</li>
-      <li>粘贴到下方，点 <b>生成地址</b></li>
-      <li>复制新地址，在 Clash 客户端里 <b>导入订阅</b></li>
-      <li>以后照常更新订阅即可，节点和规则都会自动同步</li>
+      <li data-i18n="s1" data-html="1">Copy the <b>Clash YAML</b> subscription URL from your provider</li>
+      <li data-i18n="s2" data-html="1">Paste it below and click <b>Create link</b></li>
+      <li data-i18n="s3" data-html="1"><b>Import</b> the new link in your client</li>
+      <li data-i18n="s4">Update the subscription as usual. Servers and rules stay in sync</li>
     </ol>
   </div>
 
-  <label for="sub">原订阅地址</label>
+  <label for="sub" data-i18n="labSub">Subscription URL</label>
   <input id="sub" type="url" placeholder="https://example.com/sub?...&format=clash" autocomplete="off" spellcheck="false">
-  <p class="hint">需为 Clash（YAML）格式，JMS 订阅地址末尾带 <code>format=clash</code>。</p>
+  <p class="hint" data-i18n="hint" data-html="1">Any provider, as long as the subscription is Clash YAML. For JMS, the URL should end with <code>format=clash</code>.</p>
   <div class="btns">
-    <button class="primary" id="gen">生成地址</button>
-    <button class="danger" id="reset">重置地址</button>
+    <button class="primary" id="gen" data-i18n="gen">Create link</button>
+    <button class="danger" id="reset" data-i18n="reset">Reset link</button>
   </div>
 
   <div class="out" id="out">
-    <label for="link">新订阅地址</label>
+    <label for="link" data-i18n="labLink">New subscription link</label>
     <div class="row">
       <input id="link" readonly>
-      <button class="secondary" id="copy">复制</button>
+      <button class="secondary" id="copy" data-i18n="copy">Copy</button>
+    </div>
+    <div class="qr">
+      <canvas id="qr"></canvas>
+      <p class="hint" data-i18n="qr">Scan with your phone to import</p>
     </div>
     <label class="switch">
       <div>
-        <div class="t">规则文件从本服务器下载</div>
-        <div class="d">国内网络打不开 jsDelivr 时开启，切换后需重新复制地址</div>
+        <div class="t" data-i18n="swTitle">Download rules from this server</div>
+        <div class="d" data-i18n="swDesc">Turn this on if your client cannot reach jsDelivr. Copy the link again after switching.</div>
       </div>
       <input type="checkbox" id="local">
       <i></i>
@@ -116,39 +223,146 @@
   <div class="msg" id="msg"></div>
 
   <div class="faq">
-    <h2>常见问题</h2>
+    <h2 data-i18n="faqTitle">Questions</h2>
     <details>
-      <summary>支持哪些客户端？</summary>
-      <p>需要 mihomo（Clash Meta）内核：Windows / macOS 用 Clash Verge Rev，Android 用 FlClash 或 Clash Meta for Android，iOS 用 Stash。原版 Clash 已停更，不支持 VLESS 等新协议。</p>
+      <summary data-i18n="q1">Which clients work?</summary>
+      <p data-i18n="a1">You need a mihomo (Clash Meta) core: Clash Verge Rev on Windows and macOS, FlClash or Clash Meta for Android, and Stash on iOS. Original Clash is unmaintained and does not support protocols such as VLESS.</p>
     </details>
     <details>
-      <summary>会改动我的节点吗？</summary>
-      <p>不会。节点原样来自你的订阅，本服务只添加分组和分流规则。流量信息也会照常显示。</p>
+      <summary data-i18n="q2">Will my servers change?</summary>
+      <p data-i18n="a2">No. Servers come from your subscription unchanged. This only adds groups and routing rules. Traffic stats still show up.</p>
     </details>
     <details>
-      <summary>新地址泄露了怎么办？</summary>
-      <p>输入原订阅地址，点「重置地址」。旧地址立即失效，把新地址重新导入客户端即可。</p>
+      <summary data-i18n="q3">What if the new link leaks?</summary>
+      <p data-i18n="a3">Enter the original subscription URL and click Reset link. The old link stops working immediately. Import the new one in your client.</p>
     </details>
     <details>
-      <summary>重复点生成会怎样？</summary>
-      <p>同一个原订阅永远得到同一个地址，不会失效，可以放心再次获取。</p>
+      <summary data-i18n="q4">What if I click Create link again?</summary>
+      <p data-i18n="a4">The same original subscription always gets the same link. Pasting a link this site already generated will be rejected.</p>
     </details>
     <details>
-      <summary>「从本服务器下载」是什么？</summary>
-      <p>分流规则由客户端每天自动更新，默认从 jsDelivr 下载。jsDelivr 在部分地区或网络下访问不稳定，可能导致规则下载失败、分流不生效。开启后改从本服务器下载，服务器会定期缓存最新规则。如果默认方式正常，无需开启。</p>
+      <summary data-i18n="q5">What does “download rules from this server” mean?</summary>
+      <p data-i18n="a5">Clients refresh rule lists about once a day, from jsDelivr by default. If that CDN is hard to reach, rules fail to update. Turn the switch on to fetch them from this server instead. Leave it off when the default works.</p>
     </details>
   </div>
+
+  <footer class="foot">
+    <a href="https://github.com/iluyuns/clash-rule-merge" target="_blank" rel="noopener noreferrer" data-i18n="footRepo">GitHub</a>
+    <span data-i18n="footNote">MIT · self-host it</span>
+  </footer>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
 <script>
   const $ = id => document.getElementById(id);
   let token = '';
+  let lang = localStorage.getItem('lang') || 'en';
+
+  const i18n = {
+    en: {
+      title: 'Clash rules for living in China',
+      meta: 'Add routing rules to a Clash, mihomo, or Stash subscription if you live in China. International services use your proxy. Local websites connect directly. Your servers stay unchanged.',
+      og: 'International services use your proxy. Local websites connect directly. Your servers stay unchanged.',
+      h1: 'Routing rules for living in China',
+      desc: 'A subscription usually only includes servers, so every connection goes through the proxy. If you live in China, this adds rules for Clash, mihomo, and Stash: Google, YouTube, ChatGPT, and other international services use your proxy, local websites connect directly, and common ads are blocked. Your servers are not changed.',
+      f1: 'International services', f2: 'Local sites direct', f3: 'Ads blocked', f4: 'Servers unchanged',
+      s1: 'Copy the <b>Clash YAML</b> subscription URL from your provider',
+      s2: 'Paste it below and click <b>Create link</b>',
+      s3: '<b>Import</b> the new link in your client',
+      s4: 'Update the subscription as usual. Servers and rules stay in sync',
+      labSub: 'Subscription URL',
+      hint: 'Any provider, as long as the subscription is Clash YAML. For JMS, the URL should end with <code>format=clash</code>.',
+      gen: 'Create link', reset: 'Reset link', labLink: 'New subscription link', copy: 'Copy',
+      qr: 'Scan with your phone to import',
+      swTitle: 'Download rules from this server',
+      swDesc: 'Turn this on if your client cannot reach jsDelivr. Copy the link again after switching.',
+      faqTitle: 'Questions',
+      q1: 'Which clients work?',
+      a1: 'You need a mihomo (Clash Meta) core: Clash Verge Rev on Windows and macOS, FlClash or Clash Meta for Android, and Stash on iOS. Original Clash is unmaintained and does not support protocols such as VLESS.',
+      q2: 'Will my servers change?',
+      a2: 'No. Servers come from your subscription unchanged. This only adds groups and routing rules. Traffic stats still show up.',
+      q3: 'What if the new link leaks?',
+      a3: 'Enter the original subscription URL and click Reset link. The old link stops working immediately. Import the new one in your client.',
+      q4: 'What if I click Create link again?',
+      a4: 'The same original subscription always gets the same link. Pasting a link this site already generated will be rejected.',
+      q5: 'What does “download rules from this server” mean?',
+      a5: 'Clients refresh rule lists about once a day, from jsDelivr by default. If that CDN is hard to reach, rules fail to update. Turn the switch on to fetch them from this server instead. Leave it off when the default works.',
+      footRepo: 'GitHub', footNote: 'MIT · self-host it',
+      needUrl: 'Enter your subscription URL',
+      resetAsk: 'The old link stops working immediately. Continue?',
+      resetOk: 'Reset. The old link no longer works.',
+      linkUpdated: 'Link updated. Copy it again.',
+      copied: 'Copied',
+    },
+    zh: {
+      title: '住在中国时用的 Clash 分流规则',
+      meta: '住在中国时，给 Clash、mihomo、Stash 订阅补上分流：国际服务走代理，本地网站直连，并拦截广告。节点保持原样，开源可自建。',
+      og: '国际服务走代理，本地网站直连。节点保持原样，开源可自建。',
+      h1: '住在中国时的 Clash 分流',
+      desc: '订阅通常只有节点，所有连接都走代理。住在中国时，这里给 Clash、mihomo、Stash 补上规则：Google、YouTube、ChatGPT 等国际服务走代理，本地网站直连，并拦截常见广告。节点不会被修改。',
+      f1: '国际服务走代理', f2: '本地网站直连', f3: '拦截广告', f4: '节点不变',
+      s1: '在机场后台复制 <b>Clash YAML</b> 订阅地址',
+      s2: '粘贴到下方，点 <b>生成地址</b>',
+      s3: '在客户端里 <b>导入</b> 新地址',
+      s4: '以后照常更新订阅，节点和规则都会自动同步',
+      labSub: '原订阅地址',
+      hint: '任意机场均可，订阅需为 Clash YAML。JMS 地址末尾要带 <code>format=clash</code>。',
+      gen: '生成地址', reset: '重置地址', labLink: '新订阅地址', copy: '复制',
+      qr: '手机扫码导入',
+      swTitle: '规则文件从本服务器下载',
+      swDesc: '客户端访问不了 jsDelivr 时打开。切换后请重新复制地址。',
+      faqTitle: '常见问题',
+      q1: '支持哪些客户端？',
+      a1: '需要 mihomo（Clash Meta）内核：Windows / macOS 用 Clash Verge Rev，Android 用 FlClash 或 Clash Meta for Android，iOS 用 Stash。原版 Clash 已停更，不支持 VLESS 等新协议。',
+      q2: '会改动我的节点吗？',
+      a2: '不会。节点原样来自你的订阅，这里只添加分组和分流规则。流量信息也会照常显示。',
+      q3: '新地址泄露了怎么办？',
+      a3: '输入原订阅地址，点「重置地址」。旧地址立即失效，把新地址重新导入客户端即可。',
+      q4: '重复点生成会怎样？',
+      a4: '同一个原订阅永远得到同一个地址。已经生成过的地址不能再拿来生成，会直接报错。',
+      q5: '「从本服务器下载」是什么？',
+      a5: '客户端大约每天更新一次规则，默认从 jsDelivr 下载。这个 CDN 访问不了时，规则更新会失败。打开开关后改从本服务器下载。默认方式正常就不用开。',
+      footRepo: 'GitHub 开源仓库', footNote: 'MIT · 可自行部署',
+      needUrl: '请输入订阅地址',
+      resetAsk: '重置后旧地址会立即失效，确定吗？',
+      resetOk: '已重置，旧地址已失效',
+      linkUpdated: '地址已更新，请重新复制',
+      copied: '已复制',
+    },
+  };
+
+  function applyLang(next) {
+    lang = next === 'zh' ? 'zh' : 'en';
+    localStorage.setItem('lang', lang);
+    const t = i18n[lang];
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    document.title = t.title;
+    document.querySelector('meta[name="description"]').setAttribute('content', t.meta);
+    document.querySelector('meta[property="og:title"]').setAttribute('content', t.title);
+    document.querySelector('meta[property="og:description"]').setAttribute('content', t.og);
+    document.querySelector('meta[property="og:locale"]').setAttribute('content', lang === 'zh' ? 'zh_CN' : 'en_US');
+    document.querySelector('meta[name="twitter:title"]').setAttribute('content', t.title);
+    document.querySelector('meta[name="twitter:description"]').setAttribute('content', t.og);
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const v = t[el.dataset.i18n];
+      if (v == null) return;
+      if (el.dataset.html) el.innerHTML = v;
+      else el.textContent = v;
+    });
+    $('lang-en').classList.toggle('on', lang === 'en');
+    $('lang-zh').classList.toggle('on', lang === 'zh');
+    renderLink();
+  }
 
   $('local').checked = localStorage.getItem('rules') === 'local';
+  applyLang(lang);
 
   function renderLink() {
     if (!token) return;
-    $('link').value = location.origin + '/clash?token=' + token + ($('local').checked ? '&rules=local' : '');
+    let q = 'token=' + encodeURIComponent(token) + '&lang=' + lang;
+    if ($('local').checked) q += '&rules=local';
+    $('link').value = location.origin + '/clash?' + q;
+    if (window.QRCode) QRCode.toCanvas($('qr'), $('link').value, { width: 180, margin: 1 }, () => {});
   }
 
   function show(text, ok) {
@@ -158,7 +372,7 @@
 
   async function submit(path, confirmText) {
     const subUrl = $('sub').value.trim();
-    if (!subUrl) return show('请输入订阅地址');
+    if (!subUrl) return show(i18n[lang].needUrl);
     if (confirmText && !confirm(confirmText)) return;
 
     $('gen').disabled = $('reset').disabled = true;
@@ -174,7 +388,7 @@
       token = d.token;
       renderLink();
       $('out').style.display = 'block';
-      show(path === '/api/reset' ? '已重置，旧地址已失效' : '', true);
+      show(path === '/api/reset' ? i18n[lang].resetOk : '', true);
     } catch (e) {
       show(e.message);
     } finally {
@@ -185,10 +399,10 @@
   $('local').onchange = () => {
     localStorage.setItem('rules', $('local').checked ? 'local' : '');
     renderLink();
-    show('地址已更新，请重新复制', true);
+    show(i18n[lang].linkUpdated, true);
   };
   $('gen').onclick = () => submit('/api/token');
-  $('reset').onclick = () => submit('/api/reset', '重置后旧地址会立即失效，确定吗？');
+  $('reset').onclick = () => submit('/api/reset', i18n[lang].resetAsk);
   $('copy').onclick = async () => {
     const link = $('link');
     try {
@@ -197,8 +411,10 @@
       link.select();
       document.execCommand('copy');
     }
-    show('已复制', true);
+    show(i18n[lang].copied, true);
   };
+  $('lang-en').onclick = () => { applyLang('en'); if (token) show(i18n.en.linkUpdated, true); };
+  $('lang-zh').onclick = () => { applyLang('zh'); if (token) show(i18n.zh.linkUpdated, true); };
 </script>
 </body>
 </html>
