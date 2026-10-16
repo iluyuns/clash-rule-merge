@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -143,6 +144,14 @@ func main() {
 		}
 		cacheTTL = d
 	}
+	rateLimit := 100
+	if v := os.Getenv("RATE_LIMIT"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 {
+			log.Fatalf("RATE_LIMIT: want positive integer")
+		}
+		rateLimit = n
+	}
 	subs := loadStore(dataFile)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -178,6 +187,10 @@ func main() {
 			reply(http.StatusBadRequest, map[string]string{"error": "订阅地址无效"})
 			return
 		}
+		if generatedLink(u, r, subs) {
+			reply(http.StatusBadRequest, map[string]string{"error": "不能使用已生成的地址，请填写机场原始订阅"})
+			return
+		}
 		if len(allowHosts) > 0 && !hostAllowed(u.Hostname(), allowHosts) {
 			reply(http.StatusForbidden, map[string]string{"error": "不支持该订阅域名"})
 			return
@@ -187,7 +200,7 @@ func main() {
 			// 502 会被 Cloudflare 替换掉错误信息
 			reply(http.StatusBadRequest, map[string]string{"error": "拉取订阅失败: " + err.Error()})
 			return
-		} else if _, err := mergeRules(raw, ""); err != nil {
+		} else if _, err := mergeRules(raw, "", "zh"); err != nil {
 			reply(http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
 		}
@@ -218,7 +231,11 @@ func main() {
 		if r.URL.Query().Get("rules") == "local" {
 			localBase = publicBase(r)
 		}
-		out, err := mergeRules(raw, localBase)
+		lang := r.URL.Query().Get("lang")
+		if lang != "zh" {
+			lang = "en"
+		}
+		out, err := mergeRules(raw, localBase, lang)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -256,8 +273,46 @@ func main() {
 		w.Write(data)
 	})
 
-	log.Printf("listen on %s", addr)
-	log.Fatal(http.ListenAndServe(addr, nil))
+	log.Printf("listen on %s, rate %d/s", addr, rateLimit)
+	log.Fatal(http.ListenAndServe(addr, newLimiter(rateLimit).wrap(http.DefaultServeMux)))
+}
+
+// 令牌桶：每秒最多 rate 个请求，桶容量等于 rate，超出直接拒绝
+type limiter struct {
+	mu     sync.Mutex
+	rate   float64
+	tokens float64
+	last   time.Time
+}
+
+func newLimiter(n int) *limiter {
+	return &limiter{rate: float64(n), tokens: float64(n), last: time.Now()}
+}
+
+func (l *limiter) allow() bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	now := time.Now()
+	l.tokens += now.Sub(l.last).Seconds() * l.rate
+	if l.tokens > l.rate {
+		l.tokens = l.rate
+	}
+	l.last = now
+	if l.tokens < 1 {
+		return false
+	}
+	l.tokens--
+	return true
+}
+
+func (l *limiter) wrap(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !l.allow() {
+			http.Error(w, "too many requests", http.StatusTooManyRequests)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
 }
 
 // JMS 订阅不带 Subscription-Userinfo，用流量接口补上
@@ -300,6 +355,51 @@ func jmsUsage(subURL string) string {
 	// JMS 按 1000 进制，客户端按 1024 显示
 	k := float64(1<<30) / 1e9
 	return fmt.Sprintf("upload=0; download=%d; total=%d", int64(float64(bw.Used)*k), int64(float64(bw.Limit)*k))
+}
+
+// 本服务发出的 /clash 链接不能再拿来生成，否则一条订阅会套出无数 token
+func generatedLink(u *url.URL, r *http.Request, subs *store) bool {
+	if strings.TrimSuffix(u.Path, "/") != "/clash" {
+		if raw := u.Query().Get("url"); raw != "" {
+			if inner, err := url.Parse(raw); err == nil && generatedLink(inner, r, subs) {
+				return true
+			}
+		}
+		return false
+	}
+	if t := u.Query().Get("token"); t != "" {
+		if _, ok := subs.get(t); ok {
+			return true
+		}
+	}
+	return sameHost(u.Host, r.Host) || sameHost(u.Host, publicHost())
+}
+
+func sameHost(a, b string) bool {
+	if a == "" || b == "" {
+		return false
+	}
+	ah, _, err := net.SplitHostPort(a)
+	if err != nil {
+		ah = a
+	}
+	bh, _, err := net.SplitHostPort(b)
+	if err != nil {
+		bh = b
+	}
+	return strings.EqualFold(ah, bh)
+}
+
+func publicHost() string {
+	v := os.Getenv("PUBLIC_URL")
+	if v == "" {
+		return ""
+	}
+	u, err := url.Parse(v)
+	if err != nil {
+		return ""
+	}
+	return u.Host
 }
 
 func publicBase(r *http.Request) string {
@@ -403,8 +503,8 @@ func loadTemplate() (map[string]any, error) {
 	return m, nil
 }
 
-// 用模板覆盖上游同名 key；localBase 非空时规则改走本服务器
-func mergeRules(raw []byte, localBase string) ([]byte, error) {
+// 用模板覆盖上游同名 key；localBase 非空时规则改走本服务器；lang=en 时分组改英文
+func mergeRules(raw []byte, localBase, lang string) ([]byte, error) {
 	var sub map[string]any
 	if err := yaml.Unmarshal(raw, &sub); err != nil {
 		return nil, fmt.Errorf("订阅不是有效的 Clash YAML: %w", err)
@@ -417,10 +517,24 @@ func mergeRules(raw []byte, localBase string) ([]byte, error) {
 		return nil, err
 	}
 
+	var en map[string]string
+	if lang == "en" {
+		en = map[string]string{}
+		if rawMap, ok := rules["x-en"].(map[string]any); ok {
+			for k, v := range rawMap {
+				if s, ok := v.(string); ok {
+					en[k] = s
+				}
+			}
+		}
+	}
 	for k, v := range rules {
 		if !strings.HasPrefix(k, "x-") {
 			sub[k] = v
 		}
+	}
+	if len(en) > 0 {
+		renameGroups(sub, en)
 	}
 	if localBase != "" {
 		providers, _ := sub["rule-providers"].(map[string]any)
@@ -431,4 +545,49 @@ func mergeRules(raw []byte, localBase string) ([]byte, error) {
 		}
 	}
 	return yaml.Marshal(sub)
+}
+
+func renameGroups(sub map[string]any, names map[string]string) {
+	swap := func(s string) string {
+		if n, ok := names[s]; ok {
+			return n
+		}
+		return s
+	}
+	groups, _ := sub["proxy-groups"].([]any)
+	for _, g := range groups {
+		m, ok := g.(map[string]any)
+		if !ok {
+			continue
+		}
+		if s, ok := m["name"].(string); ok {
+			m["name"] = swap(s)
+		}
+		list, _ := m["proxies"].([]any)
+		for i, p := range list {
+			if s, ok := p.(string); ok {
+				list[i] = swap(s)
+			}
+		}
+	}
+	rules, _ := sub["rules"].([]any)
+	for i, r := range rules {
+		s, ok := r.(string)
+		if !ok {
+			continue
+		}
+		parts := strings.Split(s, ",")
+		if len(parts) < 2 {
+			continue
+		}
+		idx := len(parts) - 1
+		if parts[idx] == "no-resolve" {
+			idx--
+		}
+		if idx < 1 {
+			continue
+		}
+		parts[idx] = swap(parts[idx])
+		rules[i] = strings.Join(parts, ",")
+	}
 }

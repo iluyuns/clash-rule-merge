@@ -23,7 +23,7 @@
 
 1. 用户在网页输入原订阅地址，服务端校验能正常拉取、解析后，生成一个随机 token。
 2. 客户端订阅 `/clash?token=xxx` 时，服务端实时拉取原订阅，用 `template.yaml` 覆盖其中的 `proxy-groups`、`rule-providers`、`rules`，其余字段（节点、端口等）保持不变。
-3. 分组使用 mihomo 的 `include-all-proxies` 自动包含全部节点，节点增减无需改配置。
+3. 分组使用 `include-all` 自动包含全部节点，节点增减无需改配置。Stash 与 mihomo 都支持；`include-all-proxies` 只有 mihomo 认。
 4. 规则集以 `rule-providers` 形式引用，客户端每 24 小时自动更新。
 5. 可选：链接加上 `&rules=local` 后，规则集改从本服务器下载，服务器回源并缓存（默认 12 小时）。用于 jsDelivr 在部分地区或网络下不稳定的情况。
 
@@ -34,7 +34,7 @@
 | [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat) | 规则来源。mihomo 官方规则数据，每日自动构建，使用 `meta` 分支的 `mrs` 二进制规则集（体积小、加载快） |
 | [v2fly/domain-list-community](https://github.com/v2fly/domain-list-community)、[Loyalsoldier/v2ray-rules-dat](https://github.com/Loyalsoldier/v2ray-rules-dat)、[blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script) | meta-rules-dat 的上游数据源（geosite / geoip） |
 | [jsDelivr](https://www.jsdelivr.com) | GitHub 仓库的 CDN 镜像，默认规则下载地址 |
-| [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo) | 目标客户端内核，支持 `mrs` 规则集、`include-all-proxies`、VLESS Reality 等 |
+| [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo) | 目标客户端内核，支持 `mrs` 规则集、`include-all`、VLESS Reality 等 |
 | [go-yaml/yaml](https://github.com/go-yaml/yaml) | YAML 解析 |
 | [ACL4SSR](https://github.com/ACL4SSR/ACL4SSR) / [zsokami/ACL4SSR](https://github.com/zsokami/ACL4SSR) | 分组设计参考 |
 
@@ -108,6 +108,7 @@ go run .
 | 环境变量 | 默认值 | 说明 |
 |---|---|---|
 | `LISTEN` | `:5090` | 监听地址 |
+| `RATE_LIMIT` | `100` | 全局限流，每秒最多接受的请求数，超出返回 429 |
 | `ALLOW_HOSTS` | 空（不限制） | 允许的订阅域名，逗号分隔，含子域名。内网地址始终禁止访问 |
 | `DATA_FILE` | `subs.json`（镜像内 `/data/subs.json`） | token 与订阅地址的映射 |
 | `CACHE_DIR` | `cache`（镜像内 `/data/cache`） | 规则缓存目录 |

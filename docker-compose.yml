@@ -11,6 +11,7 @@ services:
       # - "127.0.0.1:5090:5090"
     environment:
       # ALLOW_HOSTS: jmssub.net
+      # RATE_LIMIT: 100
       RULE_TTL: 12h
       # PUBLIC_URL: https://sub.example.com
       # TEMPLATE: /etc/clash-rule-merge/template.yaml

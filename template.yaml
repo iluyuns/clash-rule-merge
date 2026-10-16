@@ -1,16 +1,29 @@
-# x- 开头的 key 不会输出
+# x- 开头的 key 不会输出。分组写中文名，lang=en 时按 x-en 替换
+x-en:
+  节点选择: Proxy
+  自动选择: Auto
+  谷歌: Google
+  油管: YouTube
+  电报: Telegram
+  奈飞: Netflix
+  微软: Microsoft
+  苹果: Apple
+  广告拦截: Ad Block
+  全球直连: Local
+  漏网之鱼: Final
+
 x-anchors:
   domain: &domain {type: http, interval: 86400, behavior: domain, format: mrs}
   ipcidr: &ipcidr {type: http, interval: 86400, behavior: ipcidr, format: mrs}
 
 proxy-groups:
-  - {name: 节点选择, type: select, proxies: [自动选择, DIRECT], include-all-proxies: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Proxy.png"}
-  - {name: 自动选择, type: url-test, include-all-proxies: true, url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 50, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"}
-  - {name: AI, type: select, proxies: [节点选择, 自动选择], include-all-proxies: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png"}
-  - {name: 谷歌, type: select, proxies: [节点选择, 自动选择], include-all-proxies: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Google_Search.png"}
-  - {name: 油管, type: select, proxies: [节点选择, 自动选择], include-all-proxies: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/YouTube.png"}
-  - {name: 电报, type: select, proxies: [节点选择, 自动选择], include-all-proxies: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Telegram.png"}
-  - {name: 奈飞, type: select, proxies: [节点选择, 自动选择], include-all-proxies: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Netflix.png"}
+  - {name: 节点选择, type: select, proxies: [自动选择, DIRECT], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Proxy.png"}
+  - {name: 自动选择, type: url-test, include-all: true, url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 50, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"}
+  - {name: AI, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png"}
+  - {name: 谷歌, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Google_Search.png"}
+  - {name: 油管, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/YouTube.png"}
+  - {name: 电报, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Telegram.png"}
+  - {name: 奈飞, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Netflix.png"}
   - {name: 微软, type: select, proxies: [DIRECT, 节点选择], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png"}
   - {name: 苹果, type: select, proxies: [DIRECT, 节点选择], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple_2.png"}
   - {name: 广告拦截, type: select, proxies: [REJECT, DIRECT], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Advertising.png"}
@@ -37,6 +50,8 @@ rule-providers:
 
 rules:
   - RULE-SET,private,DIRECT
+  - DOMAIN-SUFFIX,hf.co,DIRECT
+  - DOMAIN-SUFFIX,github.com,自动选择
   - RULE-SET,ads,广告拦截
   - RULE-SET,ai,AI
   - RULE-SET,youtube,油管
