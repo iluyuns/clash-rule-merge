@@ -236,8 +236,9 @@ func main() {
 			name = u.Hostname()
 		}
 		w.Header().Set("Profile-Update-Interval", "24")
-		w.Header().Set("Content-Disposition", "attachment; filename*=UTF-8''"+url.PathEscape(name))
-		w.Header().Set("Content-Type", "text/yaml; charset=utf-8")
+		// inline 避免浏览器强制下载；客户端只看 body
+		w.Header().Set("Content-Disposition", "inline; filename*=UTF-8''"+url.PathEscape(name)+".yaml")
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.Write(out)
 	})
 
