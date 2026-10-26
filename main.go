@@ -15,7 +15,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -787,7 +786,7 @@ func loadTemplate() (map[string]any, error) {
 	return m, nil
 }
 
-// 用模板覆盖上游同名 key；noAuto 写入「自动选择」的 exclude-filter
+// 用模板覆盖上游同名 key；noAuto 的节点不进「自动选择」
 func mergeRules(raw []byte, localBase, lang, assetBase string, noAuto []string) ([]byte, error) {
 	var sub map[string]any
 	if err := yaml.Unmarshal(raw, &sub); err != nil {
@@ -833,15 +832,27 @@ func mergeRules(raw []byte, localBase, lang, assetBase string, noAuto []string) 
 	return yaml.Marshal(sub)
 }
 
+// include-all 会忽略 exclude-filter，「自动选择」只列 AUTO 源节点，住宅类才不会被测速选中
 func applyAutoExclude(sub map[string]any, noAuto []string) {
 	if len(noAuto) == 0 {
 		return
 	}
-	parts := make([]string, 0, len(noAuto))
+	skip := map[string]bool{}
 	for _, n := range noAuto {
-		parts = append(parts, regexp.QuoteMeta(n))
+		skip[n] = true
 	}
-	ex := "^(" + strings.Join(parts, "|") + ")$"
+	var autoNames []any
+	proxies, _ := sub["proxies"].([]any)
+	for _, p := range proxies {
+		pm, ok := p.(map[string]any)
+		if !ok {
+			continue
+		}
+		name, _ := pm["name"].(string)
+		if name != "" && !skip[name] {
+			autoNames = append(autoNames, name)
+		}
+	}
 	groups, _ := sub["proxy-groups"].([]any)
 	for _, g := range groups {
 		m, ok := g.(map[string]any)
@@ -851,7 +862,9 @@ func applyAutoExclude(sub map[string]any, noAuto []string) {
 		name, _ := m["name"].(string)
 		typ, _ := m["type"].(string)
 		if typ == "url-test" || name == "自动选择" {
-			m["exclude-filter"] = ex
+			delete(m, "include-all")
+			delete(m, "exclude-filter")
+			m["proxies"] = autoNames
 		}
 	}
 }
