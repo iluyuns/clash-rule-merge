@@ -2,6 +2,7 @@
 x-en:
   节点选择: Proxy
   自动选择: Auto
+  直连: Direct
   谷歌: Google
   油管: YouTube
   电报: Telegram
@@ -9,6 +10,7 @@ x-en:
   微软: Microsoft
   苹果: Apple
   广告拦截: Ad Block
+  中国: China
   全球直连: Local
   漏网之鱼: Final
   Hugging Face 模型: Hugging Face Models
@@ -18,21 +20,25 @@ x-anchors:
   ipcidr: &ipcidr {type: http, interval: 86400, behavior: ipcidr, format: mrs}
 
 proxy-groups:
-  - {name: 节点选择, type: select, proxies: [自动选择, DIRECT], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Proxy.png"}
+  - {name: 节点选择, type: select, proxies: [自动选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Proxy.png"}
   - {name: 自动选择, type: url-test, include-all: true, url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 50, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"}
+  # DIRECT 是保留字，包一层组才能显示中文
+  - {name: 直连, type: select, proxies: [DIRECT], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Direct.png"}
+  - {name: 中国, type: select, proxies: [直连, 节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/China.png"}
   - {name: AI, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png"}
   - {name: 谷歌, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Google_Search.png"}
   - {name: 油管, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/YouTube.png"}
   - {name: 电报, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Telegram.png"}
   - {name: 奈飞, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Netflix.png"}
   - {name: GitHub, type: select, proxies: [自动选择, 节点选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/GitHub.png"}
-  - {name: Hugging Face, type: select, proxies: [自动选择, 节点选择, DIRECT], include-all: true, icon: "https://huggingface.co/front/assets/huggingface_logo-noborder.svg"}
-  - {name: Hugging Face 模型, type: select, proxies: [DIRECT, 自动选择, 节点选择], include-all: true, icon: "/icons/hf.co.png"}
-  - {name: 微软, type: select, proxies: [DIRECT, 节点选择], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png"}
-  - {name: 苹果, type: select, proxies: [DIRECT, 节点选择], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple_2.png"}
-  - {name: 广告拦截, type: select, proxies: [REJECT, DIRECT], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Advertising.png"}
-  - {name: 全球直连, type: select, proxies: [DIRECT, 节点选择], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Direct.png"}
-  - {name: 漏网之鱼, type: select, proxies: [节点选择, DIRECT], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Final.png"}
+  # Stash iOS 只认 jpg/png，勿用 svg
+  - {name: Hugging Face, type: select, proxies: [自动选择, 节点选择, 直连], include-all: true, icon: "/icons/hf.co.logo.png"}
+  - {name: Hugging Face 模型, type: select, proxies: [直连, 自动选择, 节点选择], include-all: true, icon: "/icons/hf.co.model.png"}
+  - {name: 微软, type: select, proxies: [直连, 节点选择], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png"}
+  - {name: 苹果, type: select, proxies: [直连, 节点选择], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple_2.png"}
+  - {name: 广告拦截, type: select, proxies: [REJECT, 直连], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Advertising.png"}
+  - {name: 全球直连, type: select, proxies: [直连, 节点选择], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Direct.png"}
+  - {name: 漏网之鱼, type: select, proxies: [节点选择, 直连], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Final.png"}
 
 rule-providers:
   private:     {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/private.mrs"}
@@ -70,10 +76,10 @@ rules:
   - RULE-SET,microsoft,微软
   - RULE-SET,apple,苹果
   - RULE-SET,proxy,节点选择
-  - RULE-SET,cn,全球直连
+  - RULE-SET,cn,中国
   - RULE-SET,private_ip,DIRECT,no-resolve
   - RULE-SET,telegram_ip,电报,no-resolve
   - RULE-SET,google_ip,谷歌,no-resolve
   - RULE-SET,netflix_ip,奈飞,no-resolve
-  - RULE-SET,cn_ip,全球直连
+  - RULE-SET,cn_ip,中国
   - MATCH,漏网之鱼

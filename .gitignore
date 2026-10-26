@@ -1,5 +1,7 @@
 subs.json
+private.yaml
 cache/
 *.tmp
 clash-rule-merge
 clash-rule-merge.exe
+hf.co.max.png

@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -30,8 +31,11 @@ var defaultTemplate []byte
 //go:embed index.html
 var indexHTML []byte
 
-//go:embed hf.co.png
-var hfIcon []byte
+//go:embed hf.co.model.png
+var hfModelIcon []byte
+
+//go:embed hf.co.logo.png
+var hfLogoIcon []byte
 
 var client = &http.Client{
 	Timeout: 20 * time.Second,
@@ -59,7 +63,15 @@ var (
 	cacheLocks sync.Map
 )
 
-// token -> sub_url，落盘到 json
+const maxSubs = 8
+
+// 单个订阅源；Auto=false 时节点仍合并，但不进「自动选择」
+type subSource struct {
+	URL  string `json:"u"`
+	Auto bool   `json:"a"`
+}
+
+// token -> 订阅源 JSON（兼容旧版多行 URL），落盘到 json
 type store struct {
 	mu     sync.Mutex
 	path   string
@@ -79,30 +91,85 @@ func loadStore(path string) *store {
 	return s
 }
 
-func (s *store) get(token string) (string, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	u, ok := s.tokens[token]
-	return u, ok
+func encodeSources(srcs []subSource) string {
+	b, _ := json.Marshal(srcs)
+	return string(b)
 }
 
-// 获取已有 token；reset 时换新 token，旧的失效
-func (s *store) issue(subURL string, reset bool) (string, error) {
+func decodeSources(raw string) ([]subSource, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, false
+	}
+	if strings.HasPrefix(raw, "[") {
+		var srcs []subSource
+		if err := json.Unmarshal([]byte(raw), &srcs); err != nil || len(srcs) == 0 {
+			return nil, false
+		}
+		return srcs, true
+	}
+	var srcs []subSource
+	for _, line := range strings.Split(raw, "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			srcs = append(srcs, subSource{URL: line, Auto: true})
+		}
+	}
+	return srcs, len(srcs) > 0
+}
+
+func urlsKey(srcs []subSource) string {
+	urls := make([]string, 0, len(srcs))
+	for _, s := range srcs {
+		urls = append(urls, s.URL)
+	}
+	sort.Strings(urls)
+	return strings.Join(urls, "\n")
+}
+
+func (s *store) get(token string) ([]subSource, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	raw, ok := s.tokens[token]
+	if !ok {
+		return nil, false
+	}
+	return decodeSources(raw)
+}
+
+func (s *store) findByURLs(key string) string {
+	for t, raw := range s.tokens {
+		srcs, ok := decodeSources(raw)
+		if ok && urlsKey(srcs) == key {
+			return t
+		}
+	}
+	return ""
+}
+
+// 按 URL 集合找已有 token（忽略 AUTO）。生成时就地更新 AUTO；reset 换新 token。
+func (s *store) issue(srcs []subSource, reset bool) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	old := ""
-	for t, u := range s.tokens {
-		if u == subURL {
-			old = t
-			break
-		}
-	}
-	if old != "" && !reset {
-		return old, nil
-	}
+	key := urlsKey(srcs)
+	value := encodeSources(srcs)
+	old := s.findByURLs(key)
 	if old == "" && reset {
 		return "", errors.New("该订阅还没有生成过地址")
+	}
+	if old != "" && !reset {
+		next := make(map[string]string, len(s.tokens))
+		for t, u := range s.tokens {
+			next[t] = u
+		}
+		next[old] = value
+		data, _ := json.MarshalIndent(next, "", "  ")
+		if err := os.WriteFile(s.path, data, 0600); err != nil {
+			return "", err
+		}
+		s.tokens = next
+		return old, nil
 	}
 
 	b := make([]byte, 16)
@@ -115,13 +182,47 @@ func (s *store) issue(subURL string, reset bool) (string, error) {
 			next[t] = u
 		}
 	}
-	next[token] = subURL
+	next[token] = value
 	data, _ := json.MarshalIndent(next, "", "  ")
 	if err := os.WriteFile(s.path, data, 0600); err != nil {
 		return "", err
 	}
 	s.tokens = next
 	return token, nil
+}
+
+func parseSources(srcs []subSource) ([]subSource, string, error) {
+	seen := map[string]bool{}
+	var out []subSource
+	anyAuto := false
+	for _, s := range srcs {
+		u := strings.TrimSpace(s.URL)
+		if u == "" {
+			continue
+		}
+		parsed, err := url.Parse(u)
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+			return nil, "", fmt.Errorf("订阅地址无效: %s", u)
+		}
+		if seen[u] {
+			continue
+		}
+		seen[u] = true
+		out = append(out, subSource{URL: u, Auto: s.Auto})
+		if s.Auto {
+			anyAuto = true
+		}
+	}
+	if len(out) == 0 {
+		return nil, "", errors.New("请至少填写一个订阅地址")
+	}
+	if len(out) > maxSubs {
+		return nil, "", fmt.Errorf("最多 %d 个订阅源", maxSubs)
+	}
+	if !anyAuto {
+		return nil, "", errors.New("请至少勾选一个「加入自动选择」")
+	}
+	return out, encodeSources(out), nil
 }
 
 func main() {
@@ -178,37 +279,59 @@ func main() {
 		}
 
 		var req struct {
-			SubURL string `json:"sub_url"`
+			Sources []struct {
+				URL  string `json:"url"`
+				Auto *bool  `json:"auto"`
+			} `json:"sources"`
+			SubURL string `json:"sub_url"` // 兼容旧前端：多行 URL，全部进 AUTO
 		}
-		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&req); err != nil {
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&req); err != nil {
 			reply(http.StatusBadRequest, map[string]string{"error": "请求格式错误"})
 			return
 		}
-		subURL := strings.TrimSpace(req.SubURL)
-		u, err := url.Parse(subURL)
-		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-			reply(http.StatusBadRequest, map[string]string{"error": "订阅地址无效"})
+		var in []subSource
+		if len(req.Sources) > 0 {
+			for _, s := range req.Sources {
+				auto := true
+				if s.Auto != nil {
+					auto = *s.Auto
+				}
+				in = append(in, subSource{URL: s.URL, Auto: auto})
+			}
+		} else {
+			for _, line := range strings.Split(req.SubURL, "\n") {
+				line = strings.TrimSpace(line)
+				if line != "" {
+					in = append(in, subSource{URL: line, Auto: true})
+				}
+			}
+		}
+		sources, _, err := parseSources(in)
+		if err != nil {
+			reply(http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
 		}
-		if generatedLink(u, r, subs) {
-			reply(http.StatusBadRequest, map[string]string{"error": "不能使用已生成的地址，请填写机场原始订阅"})
-			return
+		for _, src := range sources {
+			u, _ := url.Parse(src.URL)
+			if generatedLink(u, r, subs) {
+				reply(http.StatusBadRequest, map[string]string{"error": "不能使用已生成的地址，请填写机场原始订阅"})
+				return
+			}
+			if len(allowHosts) > 0 && !hostAllowed(u.Hostname(), allowHosts) {
+				reply(http.StatusForbidden, map[string]string{"error": "不支持该订阅域名: " + u.Hostname()})
+				return
+			}
 		}
-		if len(allowHosts) > 0 && !hostAllowed(u.Hostname(), allowHosts) {
-			reply(http.StatusForbidden, map[string]string{"error": "不支持该订阅域名"})
+		if raw, _, _, noAuto, err := combineSubs(sources); err != nil {
+			log.Printf("combine: %v", err)
+			reply(http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
-		}
-		if raw, _, err := fetch(subURL); err != nil {
-			log.Printf("fetch %s: %v", u.Host, err)
-			// 502 会被 Cloudflare 替换掉错误信息
-			reply(http.StatusBadRequest, map[string]string{"error": "拉取订阅失败: " + err.Error()})
-			return
-		} else if _, err := mergeRules(raw, "", "zh", ""); err != nil {
+		} else if _, err := mergeRules(raw, "", "zh", "", noAuto); err != nil {
 			reply(http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
 		}
 
-		token, err := subs.issue(subURL, r.URL.Path == "/api/reset")
+		token, err := subs.issue(sources, r.URL.Path == "/api/reset")
 		if err != nil {
 			reply(http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
@@ -219,13 +342,13 @@ func main() {
 	http.HandleFunc("/api/reset", issue)
 
 	http.HandleFunc("/clash", func(w http.ResponseWriter, r *http.Request) {
-		subURL, ok := subs.get(r.URL.Query().Get("token"))
+		sources, ok := subs.get(r.URL.Query().Get("token"))
 		if !ok {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
 
-		raw, header, err := fetch(subURL)
+		raw, userinfo, profile, noAuto, err := combineSubs(sources)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
@@ -238,26 +361,17 @@ func main() {
 		if lang != "zh" {
 			lang = "en"
 		}
-		out, err := mergeRules(raw, localBase, lang, publicBase(r))
+		out, err := mergeRules(raw, localBase, lang, publicBase(r), noAuto)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		v := header.Get("Subscription-Userinfo")
-		if v == "" {
-			v = jmsUsage(subURL)
-		}
-		if v != "" {
-			w.Header().Set("Subscription-Userinfo", v)
-		}
-		name := "Clash"
-		if u, err := url.Parse(subURL); err == nil {
-			name = u.Hostname()
+		if userinfo != "" {
+			w.Header().Set("Subscription-Userinfo", userinfo)
 		}
 		w.Header().Set("Profile-Update-Interval", "24")
-		// inline 避免浏览器强制下载；客户端只看 body
-		w.Header().Set("Content-Disposition", "inline; filename*=UTF-8''"+url.PathEscape(name)+".yaml")
+		w.Header().Set("Content-Disposition", "inline; filename*=UTF-8''"+url.PathEscape(profile)+".yaml")
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.Write(out)
 	})
@@ -277,10 +391,15 @@ func main() {
 	})
 
 	log.Printf("listen on %s, rate %d/s", addr, rateLimit)
-	http.HandleFunc("/icons/hf.co.png", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/icons/hf.co.model.png", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
 		w.Header().Set("Cache-Control", "public, max-age=86400")
-		w.Write(hfIcon)
+		w.Write(hfModelIcon)
+	})
+	http.HandleFunc("/icons/hf.co.logo.png", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Write(hfLogoIcon)
 	})
 	log.Fatal(http.ListenAndServe(addr, newLimiter(rateLimit).wrap(http.DefaultServeMux)))
 }
@@ -421,6 +540,159 @@ func publicBase(r *http.Request) string {
 	return scheme + "://" + r.Host
 }
 
+func parseUserinfo(s string) map[string]int64 {
+	out := map[string]int64{}
+	for _, part := range strings.Split(s, ";") {
+		part = strings.TrimSpace(part)
+		kv := strings.SplitN(part, "=", 2)
+		if len(kv) != 2 {
+			continue
+		}
+		n, err := strconv.ParseInt(strings.TrimSpace(kv[1]), 10, 64)
+		if err != nil {
+			continue
+		}
+		out[strings.TrimSpace(kv[0])] = n
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// total>0 且 upload+download>=total，或已过 expire
+func trafficExhausted(info string) bool {
+	m := parseUserinfo(info)
+	if m == nil {
+		return false
+	}
+	if exp := m["expire"]; exp > 0 && time.Now().Unix() >= exp {
+		return true
+	}
+	total := m["total"]
+	if total <= 0 {
+		return false
+	}
+	return m["upload"]+m["download"] >= total
+}
+
+func sumUserinfo(parts []string) string {
+	var up, down, total, expire int64
+	hasExpire := false
+	any := false
+	for _, p := range parts {
+		m := parseUserinfo(p)
+		if m == nil {
+			continue
+		}
+		any = true
+		up += m["upload"]
+		down += m["download"]
+		total += m["total"]
+		if e := m["expire"]; e > 0 {
+			if !hasExpire || e < expire {
+				expire = e
+				hasExpire = true
+			}
+		}
+	}
+	if !any {
+		return ""
+	}
+	s := fmt.Sprintf("upload=%d; download=%d; total=%d", up, down, total)
+	if hasExpire {
+		s += fmt.Sprintf("; expire=%d", expire)
+	}
+	return s
+}
+
+func subHost(subURL string) string {
+	u, err := url.Parse(subURL)
+	if err != nil || u.Hostname() == "" {
+		return "Clash"
+	}
+	return u.Hostname()
+}
+
+// 拉取并合并多源；流量用尽或过期的源整份跳过；userinfo 只叠加仍可用的源
+// noAuto 为不进「自动选择」的最终节点名
+func combineSubs(sources []subSource) ([]byte, string, string, []string, error) {
+	var all []any
+	usedNames := map[string]int{}
+	var infos []string
+	var skipped int
+	var noAuto []string
+	profile := "Clash"
+
+	for i, src := range sources {
+		subURL := src.URL
+		raw, hdr, err := fetch(subURL)
+		if err != nil {
+			return nil, "", "", nil, fmt.Errorf("%s: %w", subHost(subURL), err)
+		}
+		info := hdr.Get("Subscription-Userinfo")
+		if info == "" {
+			info = jmsUsage(subURL)
+		}
+		if trafficExhausted(info) {
+			log.Printf("skip exhausted sub %s", subHost(subURL))
+			skipped++
+			continue
+		}
+
+		var sub map[string]any
+		if err := yaml.Unmarshal(raw, &sub); err != nil {
+			return nil, "", "", nil, fmt.Errorf("%s: 不是有效的 Clash YAML", subHost(subURL))
+		}
+		proxies, _ := sub["proxies"].([]any)
+		if len(proxies) == 0 {
+			return nil, "", "", nil, fmt.Errorf("%s: 订阅里没有节点", subHost(subURL))
+		}
+		for _, p := range proxies {
+			pm, ok := p.(map[string]any)
+			if !ok {
+				continue
+			}
+			name, _ := pm["name"].(string)
+			if name == "" {
+				continue
+			}
+			if n := usedNames[name]; n > 0 {
+				usedNames[name] = n + 1
+				name = fmt.Sprintf("%s #%d", name, n+1)
+				pm["name"] = name
+			} else {
+				usedNames[name] = 1
+			}
+			if !src.Auto {
+				noAuto = append(noAuto, name)
+			}
+			all = append(all, pm)
+		}
+		if info != "" {
+			infos = append(infos, info)
+		}
+		if i == 0 || profile == "Clash" {
+			profile = subHost(subURL)
+		}
+	}
+
+	if len(all) == 0 {
+		if skipped > 0 {
+			return nil, "", "", nil, errors.New("所有订阅流量已用尽或已过期")
+		}
+		return nil, "", "", nil, errors.New("合并后没有节点")
+	}
+	if len(sources) > 1 {
+		profile = "merged"
+	}
+	raw, err := yaml.Marshal(map[string]any{"proxies": all})
+	if err != nil {
+		return nil, "", "", nil, err
+	}
+	return raw, sumUserinfo(infos), profile, noAuto, nil
+}
+
 // 只允许模板里的规则；缓存过期才回源，回源失败用旧缓存
 func getRule(name string) ([]byte, error) {
 	tpl, err := loadTemplate()
@@ -429,6 +701,9 @@ func getRule(name string) ([]byte, error) {
 	}
 	providers, _ := tpl["rule-providers"].(map[string]any)
 	p, _ := providers[name].(map[string]any)
+	if p == nil {
+		return nil, os.ErrNotExist
+	}
 	src, _ := p["url"].(string)
 	if src == "" {
 		return nil, os.ErrNotExist
@@ -511,8 +786,8 @@ func loadTemplate() (map[string]any, error) {
 	return m, nil
 }
 
-// 用模板覆盖上游同名 key；localBase 非空时规则改走本服务器；lang=en 时分组改英文
-func mergeRules(raw []byte, localBase, lang, assetBase string) ([]byte, error) {
+// 用模板覆盖上游同名 key；noAuto 的节点不进「自动选择」
+func mergeRules(raw []byte, localBase, lang, assetBase string, noAuto []string) ([]byte, error) {
 	var sub map[string]any
 	if err := yaml.Unmarshal(raw, &sub); err != nil {
 		return nil, fmt.Errorf("订阅不是有效的 Clash YAML: %w", err)
@@ -541,6 +816,8 @@ func mergeRules(raw []byte, localBase, lang, assetBase string) ([]byte, error) {
 			sub[k] = v
 		}
 	}
+	applyAutoExclude(sub, noAuto)
+	expandIncludeAll(sub)
 	if len(en) > 0 {
 		renameGroups(sub, en)
 	}
@@ -554,6 +831,76 @@ func mergeRules(raw []byte, localBase, lang, assetBase string) ([]byte, error) {
 		}
 	}
 	return yaml.Marshal(sub)
+}
+
+// include-all 会忽略 exclude-filter，「自动选择」只列 AUTO 源节点，住宅类才不会被测速选中
+func applyAutoExclude(sub map[string]any, noAuto []string) {
+	if len(noAuto) == 0 {
+		return
+	}
+	skip := map[string]bool{}
+	for _, n := range noAuto {
+		skip[n] = true
+	}
+	var autoNames []any
+	proxies, _ := sub["proxies"].([]any)
+	for _, p := range proxies {
+		pm, ok := p.(map[string]any)
+		if !ok {
+			continue
+		}
+		name, _ := pm["name"].(string)
+		if name != "" && !skip[name] {
+			autoNames = append(autoNames, name)
+		}
+	}
+	groups, _ := sub["proxy-groups"].([]any)
+	for _, g := range groups {
+		m, ok := g.(map[string]any)
+		if !ok {
+			continue
+		}
+		name, _ := m["name"].(string)
+		typ, _ := m["type"].(string)
+		if typ == "url-test" || name == "自动选择" {
+			delete(m, "include-all")
+			delete(m, "exclude-filter")
+			m["proxies"] = autoNames
+		}
+	}
+}
+
+// Stash 遇 include-all 只显示节点，丢掉 DIRECT 和组引用；服务端展开成显式列表
+func expandIncludeAll(sub map[string]any) {
+	proxies, _ := sub["proxies"].([]any)
+	groups, _ := sub["proxy-groups"].([]any)
+	for _, g := range groups {
+		m, ok := g.(map[string]any)
+		if !ok || m["include-all"] != true {
+			continue
+		}
+		delete(m, "include-all")
+		seen := map[string]bool{}
+		var list []any
+		for _, p := range m["proxies"].([]any) {
+			if s, ok := p.(string); ok && !seen[s] {
+				seen[s] = true
+				list = append(list, s)
+			}
+		}
+		for _, p := range proxies {
+			pm, ok := p.(map[string]any)
+			if !ok {
+				continue
+			}
+			name, _ := pm["name"].(string)
+			if name != "" && !seen[name] {
+				seen[name] = true
+				list = append(list, name)
+			}
+		}
+		m["proxies"] = list
+	}
 }
 
 func absIcons(sub map[string]any, base string) {
