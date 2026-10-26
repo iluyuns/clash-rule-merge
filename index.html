@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Clash rules for living in China</title>
-<meta name="description" content="Add routing rules to a Clash, mihomo, or Stash subscription if you live in China. International services use your proxy. Local websites connect directly. Your servers stay unchanged.">
+<meta name="description" content="Merge Clash YAML subscriptions and add routing rules for mihomo or Stash. International traffic uses your proxy, local sites go direct. Multiple sources supported; exhausted plans are skipped.">
 <meta name="robots" content="index,follow">
 <meta name="theme-color" content="#f3f4f6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
@@ -101,11 +101,13 @@
   .steps ol { counter-reset: step; }
   .steps b { font-weight: 600; }
   label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 8px; }
-  input {
+  input, textarea {
     width: 100%; padding: 13px 14px; font-size: 15px; color: inherit; background: var(--card);
     border: 1px solid var(--line); border-radius: 12px; outline: none; transition: border-color .2s, box-shadow .2s;
+    font-family: inherit;
   }
-  input:focus { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(0, 113, 227, .15); }
+  textarea { min-height: 96px; resize: vertical; line-height: 1.45; }
+  input:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(0, 113, 227, .15); }
   input[readonly] { background: var(--fill); }
   .btns { display: flex; gap: 12px; margin-top: 16px; }
   button {
@@ -186,16 +188,16 @@
 
   <div class="steps">
     <ol>
-      <li data-i18n="s1" data-html="1">Copy the <b>Clash YAML</b> subscription URL from your provider</li>
-      <li data-i18n="s2" data-html="1">Paste it below and click <b>Create link</b></li>
+      <li data-i18n="s1" data-html="1">Copy one or more <b>Clash YAML</b> subscription URLs</li>
+      <li data-i18n="s2" data-html="1">Paste below <b>one URL per line</b>, then click <b>Create link</b></li>
       <li data-i18n="s3" data-html="1"><b>Import</b> the new link in your client</li>
-      <li data-i18n="s4">Update the subscription as usual. Servers and rules stay in sync</li>
+      <li data-i18n="s4">Update as usual. Nodes merge across sources; rules stay in sync</li>
     </ol>
   </div>
 
   <label for="sub" data-i18n="labSub">Subscription URL</label>
-  <input id="sub" type="url" placeholder="https://example.com/sub?...&format=clash" autocomplete="off" spellcheck="false">
-  <p class="hint" data-i18n="hint" data-html="1">Any provider, as long as the subscription is Clash YAML. For JMS, the URL should end with <code>format=clash</code>.</p>
+  <textarea id="sub" rows="3" placeholder="https://example.com/sub?...&format=clash" autocomplete="off" spellcheck="false"></textarea>
+  <p class="hint" data-i18n="hint" data-html="1">One Clash YAML URL per line (up to 8). Nodes are merged; exhausted or expired sources are skipped. Traffic from active sources is summed.</p>
   <div class="btns">
     <button class="primary" id="gen" data-i18n="gen">Create link</button>
     <button class="danger" id="reset" data-i18n="reset">Reset link</button>
@@ -244,6 +246,10 @@
       <summary data-i18n="q5">What does “download rules from this server” mean?</summary>
       <p data-i18n="a5">Clients refresh rule lists about once a day, from jsDelivr by default. If that CDN is hard to reach, rules fail to update. Turn the switch on to fetch them from this server instead. Leave it off when the default works.</p>
     </details>
+    <details>
+      <summary data-i18n="q6">Can I merge multiple subscriptions?</summary>
+      <p data-i18n="a6">Yes. Put one URL per line. Nodes are merged (duplicate names get a #2 suffix). Sources with used-up traffic or past expire are dropped entirely. Client traffic stats sum only the remaining sources.</p>
+    </details>
   </div>
 
   <footer class="foot">
@@ -266,12 +272,12 @@
       h1: 'Routing rules for living in China',
       desc: 'A subscription usually only includes servers, so every connection goes through the proxy. If you live in China, this adds rules for Clash, mihomo, and Stash: Google, YouTube, ChatGPT, and other international services use your proxy, local websites connect directly, and common ads are blocked. Your servers are not changed.',
       f1: 'International services', f2: 'Local sites direct', f3: 'Ads blocked', f4: 'Servers unchanged',
-      s1: 'Copy the <b>Clash YAML</b> subscription URL from your provider',
-      s2: 'Paste it below and click <b>Create link</b>',
+      s1: 'Copy one or more <b>Clash YAML</b> subscription URLs',
+      s2: 'Paste below <b>one URL per line</b>, then click <b>Create link</b>',
       s3: '<b>Import</b> the new link in your client',
-      s4: 'Update the subscription as usual. Servers and rules stay in sync',
-      labSub: 'Subscription URL',
-      hint: 'Any provider, as long as the subscription is Clash YAML. For JMS, the URL should end with <code>format=clash</code>.',
+      s4: 'Update as usual. Nodes merge across sources; rules stay in sync',
+      labSub: 'Subscription URL(s)',
+      hint: 'One Clash YAML URL per line (up to 8). Nodes are merged; exhausted or expired sources are skipped. Traffic from active sources is summed. For JMS, use <code>format=clash</code>.',
       gen: 'Create link', reset: 'Reset link', labLink: 'New subscription link', copy: 'Copy',
       qr: 'Scan with your phone to import',
       swTitle: 'Download rules from this server',
@@ -287,6 +293,8 @@
       a4: 'The same original subscription always gets the same link. Pasting a link this site already generated will be rejected.',
       q5: 'What does “download rules from this server” mean?',
       a5: 'Clients refresh rule lists about once a day, from jsDelivr by default. If that CDN is hard to reach, rules fail to update. Turn the switch on to fetch them from this server instead. Leave it off when the default works.',
+      q6: 'Can I merge multiple subscriptions?',
+      a6: 'Yes. Put one URL per line. Nodes are merged (duplicate names get a #2 suffix). Sources with used-up traffic or past expire are dropped entirely. Client traffic stats sum only the remaining sources.',
       footRepo: 'GitHub', footNote: 'MIT · self-host it',
       needUrl: 'Enter your subscription URL',
       resetAsk: 'The old link stops working immediately. Continue?',
@@ -301,12 +309,12 @@
       h1: '住在中国时的 Clash 分流',
       desc: '订阅通常只有节点，所有连接都走代理。住在中国时，这里给 Clash、mihomo、Stash 补上规则：Google、YouTube、ChatGPT 等国际服务走代理，本地网站直连，并拦截常见广告。节点不会被修改。',
       f1: '国际服务走代理', f2: '本地网站直连', f3: '拦截广告', f4: '节点不变',
-      s1: '在机场后台复制 <b>Clash YAML</b> 订阅地址',
-      s2: '粘贴到下方，点 <b>生成地址</b>',
+      s1: '复制一个或多个 <b>Clash YAML</b> 订阅地址',
+      s2: '粘贴到下方，<b>每行一个</b>，点 <b>生成地址</b>',
       s3: '在客户端里 <b>导入</b> 新地址',
-      s4: '以后照常更新订阅，节点和规则都会自动同步',
-      labSub: '原订阅地址',
-      hint: '任意机场均可，订阅需为 Clash YAML。JMS 地址末尾要带 <code>format=clash</code>。',
+      s4: '以后照常更新；多源节点会合并，规则自动同步',
+      labSub: '订阅地址（可多个）',
+      hint: '每行一个 Clash YAML 订阅，最多 8 个。节点会合并；流量用尽或已过期的源会整份跳过；客户端流量只叠加仍可用的源。JMS 需带 <code>format=clash</code>。',
       gen: '生成地址', reset: '重置地址', labLink: '新订阅地址', copy: '复制',
       qr: '手机扫码导入',
       swTitle: '规则文件从本服务器下载',
@@ -322,6 +330,8 @@
       a4: '同一个原订阅永远得到同一个地址。已经生成过的地址不能再拿来生成，会直接报错。',
       q5: '「从本服务器下载」是什么？',
       a5: '客户端大约每天更新一次规则，默认从 jsDelivr 下载。这个 CDN 访问不了时，规则更新会失败。打开开关后改从本服务器下载。默认方式正常就不用开。',
+      q6: '可以合并多个订阅吗？',
+      a6: '可以，每行一个地址。节点合并（重名加 #2）。流量用尽或过期的源整份剔除。客户端显示的流量只叠加仍可用的源。',
       footRepo: 'GitHub 开源仓库', footNote: 'MIT · 可自行部署',
       needUrl: '请输入订阅地址',
       resetAsk: '重置后旧地址会立即失效，确定吗？',
