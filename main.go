@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -118,6 +119,15 @@ func decodeSources(raw string) ([]subSource, bool) {
 	return srcs, len(srcs) > 0
 }
 
+func urlsKey(srcs []subSource) string {
+	urls := make([]string, 0, len(srcs))
+	for _, s := range srcs {
+		urls = append(urls, s.URL)
+	}
+	sort.Strings(urls)
+	return strings.Join(urls, "\n")
+}
+
 func (s *store) get(token string) ([]subSource, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -128,23 +138,39 @@ func (s *store) get(token string) ([]subSource, bool) {
 	return decodeSources(raw)
 }
 
-// 获取已有 token；reset 时换新 token，旧的失效
-func (s *store) issue(subKey string, reset bool) (string, error) {
+func (s *store) findByURLs(key string) string {
+	for t, raw := range s.tokens {
+		srcs, ok := decodeSources(raw)
+		if ok && urlsKey(srcs) == key {
+			return t
+		}
+	}
+	return ""
+}
+
+// 按 URL 集合找已有 token（忽略 AUTO）。生成时就地更新 AUTO；reset 换新 token。
+func (s *store) issue(srcs []subSource, reset bool) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	old := ""
-	for t, u := range s.tokens {
-		if u == subKey {
-			old = t
-			break
-		}
-	}
-	if old != "" && !reset {
-		return old, nil
-	}
+	key := urlsKey(srcs)
+	value := encodeSources(srcs)
+	old := s.findByURLs(key)
 	if old == "" && reset {
 		return "", errors.New("该订阅还没有生成过地址")
+	}
+	if old != "" && !reset {
+		next := make(map[string]string, len(s.tokens))
+		for t, u := range s.tokens {
+			next[t] = u
+		}
+		next[old] = value
+		data, _ := json.MarshalIndent(next, "", "  ")
+		if err := os.WriteFile(s.path, data, 0600); err != nil {
+			return "", err
+		}
+		s.tokens = next
+		return old, nil
 	}
 
 	b := make([]byte, 16)
@@ -157,7 +183,7 @@ func (s *store) issue(subKey string, reset bool) (string, error) {
 			next[t] = u
 		}
 	}
-	next[token] = subKey
+	next[token] = value
 	data, _ := json.MarshalIndent(next, "", "  ")
 	if err := os.WriteFile(s.path, data, 0600); err != nil {
 		return "", err
@@ -281,7 +307,7 @@ func main() {
 				}
 			}
 		}
-		sources, subKey, err := parseSources(in)
+		sources, _, err := parseSources(in)
 		if err != nil {
 			reply(http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
@@ -306,7 +332,7 @@ func main() {
 			return
 		}
 
-		token, err := subs.issue(subKey, r.URL.Path == "/api/reset")
+		token, err := subs.issue(sources, r.URL.Path == "/api/reset")
 		if err != nil {
 			reply(http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
