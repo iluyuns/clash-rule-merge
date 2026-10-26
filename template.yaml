@@ -9,6 +9,7 @@ x-en:
   微软: Microsoft
   苹果: Apple
   广告拦截: Ad Block
+  国内: China
   全球直连: Local
   漏网之鱼: Final
   Hugging Face 模型: Hugging Face Models
@@ -32,6 +33,8 @@ proxy-groups:
   - {name: 微软, type: select, proxies: [DIRECT, 节点选择], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png"}
   - {name: 苹果, type: select, proxies: [DIRECT, 节点选择], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple_2.png"}
   - {name: 广告拦截, type: select, proxies: [REJECT, DIRECT], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Advertising.png"}
+  # 公司内网封国内站时默认走「家」；在家时可改 DIRECT。filter 只额外拉进名称含 家 的节点
+  - {name: 国内, type: select, proxies: [家, DIRECT, 节点选择], include-all: true, filter: "(?i)家", icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/China.png"}
   - {name: 全球直连, type: select, proxies: [DIRECT, 节点选择], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Direct.png"}
   - {name: 漏网之鱼, type: select, proxies: [节点选择, DIRECT], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Final.png"}
 
@@ -71,10 +74,10 @@ rules:
   - RULE-SET,microsoft,微软
   - RULE-SET,apple,苹果
   - RULE-SET,proxy,节点选择
-  - RULE-SET,cn,全球直连
+  - RULE-SET,cn,国内
   - RULE-SET,private_ip,DIRECT,no-resolve
   - RULE-SET,telegram_ip,电报,no-resolve
   - RULE-SET,google_ip,谷歌,no-resolve
   - RULE-SET,netflix_ip,奈飞,no-resolve
-  - RULE-SET,cn_ip,全球直连
+  - RULE-SET,cn_ip,国内
   - MATCH,漏网之鱼
