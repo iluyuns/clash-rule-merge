@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -30,11 +31,11 @@ var defaultTemplate []byte
 //go:embed index.html
 var indexHTML []byte
 
-//go:embed hf.co.png
-var hfIcon []byte
+//go:embed hf.co.model.png
+var hfModelIcon []byte
 
-//go:embed huggingface_logo-noborder.svg
-var hfLogoSVG []byte
+//go:embed hf.co.logo.png
+var hfLogoIcon []byte
 
 var client = &http.Client{
 	Timeout: 20 * time.Second,
@@ -64,7 +65,13 @@ var (
 
 const maxSubs = 8
 
-// token -> 订阅地址（多行=多源），落盘到 json
+// 单个订阅源；Auto=false 时节点仍合并，但不进「自动选择」
+type subSource struct {
+	URL  string `json:"u"`
+	Auto bool   `json:"a"`
+}
+
+// token -> 订阅源 JSON（兼容旧版多行 URL），落盘到 json
 type store struct {
 	mu     sync.Mutex
 	path   string
@@ -84,14 +91,41 @@ func loadStore(path string) *store {
 	return s
 }
 
-func (s *store) get(token string) ([]string, bool) {
+func encodeSources(srcs []subSource) string {
+	b, _ := json.Marshal(srcs)
+	return string(b)
+}
+
+func decodeSources(raw string) ([]subSource, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, false
+	}
+	if strings.HasPrefix(raw, "[") {
+		var srcs []subSource
+		if err := json.Unmarshal([]byte(raw), &srcs); err != nil || len(srcs) == 0 {
+			return nil, false
+		}
+		return srcs, true
+	}
+	var srcs []subSource
+	for _, line := range strings.Split(raw, "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			srcs = append(srcs, subSource{URL: line, Auto: true})
+		}
+	}
+	return srcs, len(srcs) > 0
+}
+
+func (s *store) get(token string) ([]subSource, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	raw, ok := s.tokens[token]
 	if !ok {
 		return nil, false
 	}
-	return splitSubURLs(raw), true
+	return decodeSources(raw)
 }
 
 // 获取已有 token；reset 时换新 token，旧的失效
@@ -132,42 +166,38 @@ func (s *store) issue(subKey string, reset bool) (string, error) {
 	return token, nil
 }
 
-func splitSubURLs(raw string) []string {
-	var out []string
-	for _, line := range strings.Split(raw, "\n") {
-		line = strings.TrimSpace(line)
-		if line != "" {
-			out = append(out, line)
-		}
-	}
-	return out
-}
-
-func parseSubURLs(raw string) ([]string, string, error) {
+func parseSources(srcs []subSource) ([]subSource, string, error) {
 	seen := map[string]bool{}
-	var urls []string
-	for _, line := range strings.Split(raw, "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" {
+	var out []subSource
+	anyAuto := false
+	for _, s := range srcs {
+		u := strings.TrimSpace(s.URL)
+		if u == "" {
 			continue
 		}
-		u, err := url.Parse(line)
-		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-			return nil, "", fmt.Errorf("订阅地址无效: %s", line)
+		parsed, err := url.Parse(u)
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+			return nil, "", fmt.Errorf("订阅地址无效: %s", u)
 		}
-		if seen[line] {
+		if seen[u] {
 			continue
 		}
-		seen[line] = true
-		urls = append(urls, line)
+		seen[u] = true
+		out = append(out, subSource{URL: u, Auto: s.Auto})
+		if s.Auto {
+			anyAuto = true
+		}
 	}
-	if len(urls) == 0 {
+	if len(out) == 0 {
 		return nil, "", errors.New("请至少填写一个订阅地址")
 	}
-	if len(urls) > maxSubs {
+	if len(out) > maxSubs {
 		return nil, "", fmt.Errorf("最多 %d 个订阅源", maxSubs)
 	}
-	return urls, strings.Join(urls, "\n"), nil
+	if !anyAuto {
+		return nil, "", errors.New("请至少勾选一个「加入自动选择」")
+	}
+	return out, encodeSources(out), nil
 }
 
 func main() {
@@ -224,19 +254,40 @@ func main() {
 		}
 
 		var req struct {
-			SubURL string `json:"sub_url"`
+			Sources []struct {
+				URL  string `json:"url"`
+				Auto *bool  `json:"auto"`
+			} `json:"sources"`
+			SubURL string `json:"sub_url"` // 兼容旧前端：多行 URL，全部进 AUTO
 		}
 		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&req); err != nil {
 			reply(http.StatusBadRequest, map[string]string{"error": "请求格式错误"})
 			return
 		}
-		urls, subKey, err := parseSubURLs(req.SubURL)
+		var in []subSource
+		if len(req.Sources) > 0 {
+			for _, s := range req.Sources {
+				auto := true
+				if s.Auto != nil {
+					auto = *s.Auto
+				}
+				in = append(in, subSource{URL: s.URL, Auto: auto})
+			}
+		} else {
+			for _, line := range strings.Split(req.SubURL, "\n") {
+				line = strings.TrimSpace(line)
+				if line != "" {
+					in = append(in, subSource{URL: line, Auto: true})
+				}
+			}
+		}
+		sources, subKey, err := parseSources(in)
 		if err != nil {
 			reply(http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
 		}
-		for _, subURL := range urls {
-			u, _ := url.Parse(subURL)
+		for _, src := range sources {
+			u, _ := url.Parse(src.URL)
 			if generatedLink(u, r, subs) {
 				reply(http.StatusBadRequest, map[string]string{"error": "不能使用已生成的地址，请填写机场原始订阅"})
 				return
@@ -246,11 +297,11 @@ func main() {
 				return
 			}
 		}
-		if raw, _, _, err := combineSubs(urls); err != nil {
+		if raw, _, _, noAuto, err := combineSubs(sources); err != nil {
 			log.Printf("combine: %v", err)
 			reply(http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
-		} else if _, err := mergeRules(raw, "", "zh", ""); err != nil {
+		} else if _, err := mergeRules(raw, "", "zh", "", noAuto); err != nil {
 			reply(http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
 		}
@@ -266,13 +317,13 @@ func main() {
 	http.HandleFunc("/api/reset", issue)
 
 	http.HandleFunc("/clash", func(w http.ResponseWriter, r *http.Request) {
-		urls, ok := subs.get(r.URL.Query().Get("token"))
+		sources, ok := subs.get(r.URL.Query().Get("token"))
 		if !ok {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
 
-		raw, userinfo, profile, err := combineSubs(urls)
+		raw, userinfo, profile, noAuto, err := combineSubs(sources)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
@@ -285,7 +336,7 @@ func main() {
 		if lang != "zh" {
 			lang = "en"
 		}
-		out, err := mergeRules(raw, localBase, lang, publicBase(r))
+		out, err := mergeRules(raw, localBase, lang, publicBase(r), noAuto)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -315,15 +366,15 @@ func main() {
 	})
 
 	log.Printf("listen on %s, rate %d/s", addr, rateLimit)
-	http.HandleFunc("/icons/hf.co.png", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/icons/hf.co.model.png", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
 		w.Header().Set("Cache-Control", "public, max-age=86400")
-		w.Write(hfIcon)
+		w.Write(hfModelIcon)
 	})
-	http.HandleFunc("/icons/huggingface_logo-noborder.svg", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "image/svg+xml")
+	http.HandleFunc("/icons/hf.co.logo.png", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/png")
 		w.Header().Set("Cache-Control", "public, max-age=86400")
-		w.Write(hfLogoSVG)
+		w.Write(hfLogoIcon)
 	})
 	log.Fatal(http.ListenAndServe(addr, newLimiter(rateLimit).wrap(http.DefaultServeMux)))
 }
@@ -539,17 +590,20 @@ func subHost(subURL string) string {
 }
 
 // 拉取并合并多源；流量用尽或过期的源整份跳过；userinfo 只叠加仍可用的源
-func combineSubs(urls []string) ([]byte, string, string, error) {
+// noAuto 为不进「自动选择」的最终节点名
+func combineSubs(sources []subSource) ([]byte, string, string, []string, error) {
 	var all []any
 	usedNames := map[string]int{}
 	var infos []string
 	var skipped int
+	var noAuto []string
 	profile := "Clash"
 
-	for i, subURL := range urls {
+	for i, src := range sources {
+		subURL := src.URL
 		raw, hdr, err := fetch(subURL)
 		if err != nil {
-			return nil, "", "", fmt.Errorf("%s: %w", subHost(subURL), err)
+			return nil, "", "", nil, fmt.Errorf("%s: %w", subHost(subURL), err)
 		}
 		info := hdr.Get("Subscription-Userinfo")
 		if info == "" {
@@ -563,11 +617,11 @@ func combineSubs(urls []string) ([]byte, string, string, error) {
 
 		var sub map[string]any
 		if err := yaml.Unmarshal(raw, &sub); err != nil {
-			return nil, "", "", fmt.Errorf("%s: 不是有效的 Clash YAML", subHost(subURL))
+			return nil, "", "", nil, fmt.Errorf("%s: 不是有效的 Clash YAML", subHost(subURL))
 		}
 		proxies, _ := sub["proxies"].([]any)
 		if len(proxies) == 0 {
-			return nil, "", "", fmt.Errorf("%s: 订阅里没有节点", subHost(subURL))
+			return nil, "", "", nil, fmt.Errorf("%s: 订阅里没有节点", subHost(subURL))
 		}
 		for _, p := range proxies {
 			pm, ok := p.(map[string]any)
@@ -580,9 +634,13 @@ func combineSubs(urls []string) ([]byte, string, string, error) {
 			}
 			if n := usedNames[name]; n > 0 {
 				usedNames[name] = n + 1
-				pm["name"] = fmt.Sprintf("%s #%d", name, n+1)
+				name = fmt.Sprintf("%s #%d", name, n+1)
+				pm["name"] = name
 			} else {
 				usedNames[name] = 1
+			}
+			if !src.Auto {
+				noAuto = append(noAuto, name)
 			}
 			all = append(all, pm)
 		}
@@ -596,18 +654,18 @@ func combineSubs(urls []string) ([]byte, string, string, error) {
 
 	if len(all) == 0 {
 		if skipped > 0 {
-			return nil, "", "", errors.New("所有订阅流量已用尽或已过期")
+			return nil, "", "", nil, errors.New("所有订阅流量已用尽或已过期")
 		}
-		return nil, "", "", errors.New("合并后没有节点")
+		return nil, "", "", nil, errors.New("合并后没有节点")
 	}
-	if len(urls) > 1 {
+	if len(sources) > 1 {
 		profile = "merged"
 	}
 	raw, err := yaml.Marshal(map[string]any{"proxies": all})
 	if err != nil {
-		return nil, "", "", err
+		return nil, "", "", nil, err
 	}
-	return raw, sumUserinfo(infos), profile, nil
+	return raw, sumUserinfo(infos), profile, noAuto, nil
 }
 
 // 只允许模板里的规则；缓存过期才回源，回源失败用旧缓存
@@ -703,8 +761,8 @@ func loadTemplate() (map[string]any, error) {
 	return m, nil
 }
 
-// 用模板覆盖上游同名 key
-func mergeRules(raw []byte, localBase, lang, assetBase string) ([]byte, error) {
+// 用模板覆盖上游同名 key；noAuto 写入「自动选择」的 exclude-filter
+func mergeRules(raw []byte, localBase, lang, assetBase string, noAuto []string) ([]byte, error) {
 	var sub map[string]any
 	if err := yaml.Unmarshal(raw, &sub); err != nil {
 		return nil, fmt.Errorf("订阅不是有效的 Clash YAML: %w", err)
@@ -733,6 +791,7 @@ func mergeRules(raw []byte, localBase, lang, assetBase string) ([]byte, error) {
 			sub[k] = v
 		}
 	}
+	applyAutoExclude(sub, noAuto)
 	if len(en) > 0 {
 		renameGroups(sub, en)
 	}
@@ -746,6 +805,29 @@ func mergeRules(raw []byte, localBase, lang, assetBase string) ([]byte, error) {
 		}
 	}
 	return yaml.Marshal(sub)
+}
+
+func applyAutoExclude(sub map[string]any, noAuto []string) {
+	if len(noAuto) == 0 {
+		return
+	}
+	parts := make([]string, 0, len(noAuto))
+	for _, n := range noAuto {
+		parts = append(parts, regexp.QuoteMeta(n))
+	}
+	ex := "^(" + strings.Join(parts, "|") + ")$"
+	groups, _ := sub["proxy-groups"].([]any)
+	for _, g := range groups {
+		m, ok := g.(map[string]any)
+		if !ok {
+			continue
+		}
+		name, _ := m["name"].(string)
+		typ, _ := m["type"].(string)
+		if typ == "url-test" || name == "自动选择" {
+			m["exclude-filter"] = ex
+		}
+	}
 }
 
 func absIcons(sub map[string]any, base string) {
