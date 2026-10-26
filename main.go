@@ -817,6 +817,7 @@ func mergeRules(raw []byte, localBase, lang, assetBase string, noAuto []string) 
 		}
 	}
 	applyAutoExclude(sub, noAuto)
+	expandIncludeAll(sub)
 	if len(en) > 0 {
 		renameGroups(sub, en)
 	}
@@ -866,6 +867,39 @@ func applyAutoExclude(sub map[string]any, noAuto []string) {
 			delete(m, "exclude-filter")
 			m["proxies"] = autoNames
 		}
+	}
+}
+
+// Stash 遇 include-all 只显示节点，丢掉 DIRECT 和组引用；服务端展开成显式列表
+func expandIncludeAll(sub map[string]any) {
+	proxies, _ := sub["proxies"].([]any)
+	groups, _ := sub["proxy-groups"].([]any)
+	for _, g := range groups {
+		m, ok := g.(map[string]any)
+		if !ok || m["include-all"] != true {
+			continue
+		}
+		delete(m, "include-all")
+		seen := map[string]bool{}
+		var list []any
+		for _, p := range m["proxies"].([]any) {
+			if s, ok := p.(string); ok && !seen[s] {
+				seen[s] = true
+				list = append(list, s)
+			}
+		}
+		for _, p := range proxies {
+			pm, ok := p.(map[string]any)
+			if !ok {
+				continue
+			}
+			name, _ := pm["name"].(string)
+			if name != "" && !seen[name] {
+				seen[name] = true
+				list = append(list, name)
+			}
+		}
+		m["proxies"] = list
 	}
 }
 
