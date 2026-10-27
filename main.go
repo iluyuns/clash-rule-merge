@@ -888,7 +888,8 @@ func expandIncludeAll(sub map[string]any) {
 		delete(m, "include-all")
 		seen := map[string]bool{}
 		var list []any
-		for _, p := range m["proxies"].([]any) {
+		static, _ := m["proxies"].([]any)
+		for _, p := range static {
 			if s, ok := p.(string); ok && !seen[s] {
 				seen[s] = true
 				list = append(list, s)
