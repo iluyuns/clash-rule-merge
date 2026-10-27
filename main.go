@@ -241,6 +241,9 @@ func main() {
 	if v := os.Getenv("CACHE_DIR"); v != "" {
 		cacheDir = v
 	}
+	if v := os.Getenv("GEO_DB_URL"); v != "" {
+		geoDBURL = v
+	}
 	if v := os.Getenv("RULE_TTL"); v != "" {
 		d, err := time.ParseDuration(v)
 		if err != nil {
@@ -326,7 +329,7 @@ func main() {
 			log.Printf("combine: %v", err)
 			reply(http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
-		} else if _, err := mergeRules(raw, "", "zh", "", noAuto); err != nil {
+		} else if _, err := mergeRules(raw, "", "zh", "", noAuto, false); err != nil {
 			reply(http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
 		}
@@ -361,7 +364,7 @@ func main() {
 		if lang != "zh" {
 			lang = "en"
 		}
-		out, err := mergeRules(raw, localBase, lang, publicBase(r), noAuto)
+		out, err := mergeRules(raw, localBase, lang, publicBase(r), noAuto, r.URL.Query().Get("group") == "geo")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -786,8 +789,8 @@ func loadTemplate() (map[string]any, error) {
 	return m, nil
 }
 
-// 用模板覆盖上游同名 key；noAuto 的节点不进「自动选择」
-func mergeRules(raw []byte, localBase, lang, assetBase string, noAuto []string) ([]byte, error) {
+// 用模板覆盖上游同名 key；noAuto 的节点不进「自动选择」；geo=true 时实测出口按国家分组
+func mergeRules(raw []byte, localBase, lang, assetBase string, noAuto []string, geo bool) ([]byte, error) {
 	var sub map[string]any
 	if err := yaml.Unmarshal(raw, &sub); err != nil {
 		return nil, fmt.Errorf("订阅不是有效的 Clash YAML: %w", err)
@@ -815,6 +818,9 @@ func mergeRules(raw []byte, localBase, lang, assetBase string, noAuto []string) 
 		if !strings.HasPrefix(k, "x-") {
 			sub[k] = v
 		}
+	}
+	if geo {
+		noAuto = geoRename(sub, noAuto)
 	}
 	applyAutoExclude(sub, noAuto)
 	expandIncludeAll(sub)
