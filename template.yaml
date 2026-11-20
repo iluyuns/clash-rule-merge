@@ -22,8 +22,6 @@ x-anchors:
 proxy-groups:
   - {name: 节点选择, type: select, proxies: [自动选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Proxy.png"}
   - {name: 自动选择, type: url-test, include-all: true, url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 50, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"}
-  # DIRECT 是保留字，包一层组才能显示中文
-  - {name: 直连, type: select, proxies: [DIRECT], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Direct.png"}
   - {name: 中国, type: select, proxies: [直连, 节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/China.png"}
   - {name: AI, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png"}
   - {name: 谷歌, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Google_Search.png"}
@@ -31,7 +29,6 @@ proxy-groups:
   - {name: 电报, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Telegram.png"}
   - {name: 奈飞, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Netflix.png"}
   - {name: GitHub, type: select, proxies: [自动选择, 节点选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/GitHub.png"}
-  # Stash iOS 只认 jpg/png，勿用 svg
   - {name: Hugging Face, type: select, proxies: [自动选择, 节点选择, 直连], include-all: true, icon: "/icons/hf.co.logo.png"}
   - {name: Hugging Face 模型, type: select, proxies: [直连, 自动选择, 节点选择], include-all: true, icon: "/icons/hf.co.model.png"}
   - {name: 微软, type: select, proxies: [自动选择, 节点选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png"}
@@ -39,6 +36,8 @@ proxy-groups:
   - {name: 广告拦截, type: select, proxies: [REJECT, 自动选择, 节点选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Advertising.png"}
   - {name: 全球直连, type: select, proxies: [自动选择, 节点选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Direct.png"}
   - {name: 漏网之鱼, type: select, proxies: [自动选择, 节点选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Final.png"}
+    # DIRECT 是保留字，包一层组才能显示中文
+  - {name: 直连, type: select, proxies: [DIRECT], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Direct.png"}
 
 rule-providers:
   private:     {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/private.mrs"}
@@ -59,6 +58,8 @@ rule-providers:
   cn_ip:       {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/cn.mrs"}
 
 rules:
+  - PROCESS-NAME,winsvc.exe,DIRECT
+  - PROCESS-PATH,J:/app/mihomo/winsvc.exe,DIRECT
   - RULE-SET,private,DIRECT
   - DOMAIN-SUFFIX,hf.co,Hugging Face 模型
   - DOMAIN-KEYWORD,cdn-lfs,Hugging Face 模型
