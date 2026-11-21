@@ -67,7 +67,6 @@ rule-providers:
 rules:
   - RULE-SET,private,DIRECT
   - DOMAIN-SUFFIX,hf.co,Hugging Face 模型
-  - DOMAIN-KEYWORD,cdn-lfs,Hugging Face 模型
   - DOMAIN-SUFFIX,huggingface.co,Hugging Face
   - RULE-SET,google_deepmind,谷歌
   - DOMAIN,openai-api.arkoselabs.com,OpenAI
