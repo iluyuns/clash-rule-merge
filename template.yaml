@@ -11,7 +11,6 @@ x-en:
   苹果: Apple
   广告拦截: Ad Block
   中国: China
-  全球直连: Local
   漏网之鱼: Final
   Hugging Face 模型: Hugging Face Models
 
@@ -23,51 +22,60 @@ proxy-groups:
   - {name: 节点选择, type: select, proxies: [自动选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Proxy.png"}
   - {name: 自动选择, type: url-test, include-all: true, url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 50, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"}
   - {name: 中国, type: select, proxies: [直连, 节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/China.png"}
-  - {name: AI, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png"}
   - {name: 谷歌, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Google_Search.png"}
+  - {name: OpenAI, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png"}
+  - {name: Claude, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/npm/@lobehub/icons-static-png@latest/dark/claude-color.png"}
+  - {name: Cursor, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/npm/@lobehub/icons-static-png@latest/dark/cursor.png"}
+  - {name: AI, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Bot.png"}
   - {name: 油管, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/YouTube.png"}
   - {name: 电报, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Telegram.png"}
   - {name: 奈飞, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Netflix.png"}
-  - {name: GitHub, type: select, proxies: [自动选择, 节点选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/GitHub.png"}
+  - {name: GitHub, type: select, proxies: [节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/GitHub.png"}
   - {name: Hugging Face, type: select, proxies: [自动选择, 节点选择, 直连], include-all: true, icon: "/icons/hf.co.logo.png"}
   - {name: Hugging Face 模型, type: select, proxies: [直连, 自动选择, 节点选择], include-all: true, icon: "/icons/hf.co.model.png"}
   - {name: 微软, type: select, proxies: [自动选择, 节点选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png"}
   - {name: 苹果, type: select, proxies: [自动选择, 节点选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple_2.png"}
   - {name: 广告拦截, type: select, proxies: [REJECT, 自动选择, 节点选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Advertising.png"}
-  - {name: 全球直连, type: select, proxies: [自动选择, 节点选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Direct.png"}
-  - {name: 漏网之鱼, type: select, proxies: [自动选择, 节点选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Final.png"}
+  - {name: 漏网之鱼, type: select, proxies: [节点选择, 自动选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Final.png"}
     # DIRECT 是保留字，包一层组才能显示中文
   - {name: 直连, type: select, proxies: [DIRECT], icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Direct.png"}
 
 rule-providers:
-  private:     {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/private.mrs"}
-  ads:         {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-ads-all.mrs"}
-  ai:          {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-ai-!cn.mrs"}
-  youtube:     {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/youtube.mrs"}
-  google:      {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/google.mrs"}
-  telegram:    {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/telegram.mrs"}
-  netflix:     {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/netflix.mrs"}
-  microsoft:   {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.mrs"}
-  apple:       {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/apple.mrs"}
-  proxy:       {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/geolocation-!cn.mrs"}
-  cn:          {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/cn.mrs"}
-  private_ip:  {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/private.mrs"}
-  telegram_ip: {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/telegram.mrs"}
-  google_ip:   {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/google.mrs"}
-  netflix_ip:  {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/netflix.mrs"}
-  cn_ip:       {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/cn.mrs"}
+  private:         {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/private.mrs"}
+  ads:             {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-ads-all.mrs"}
+  google_deepmind: {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/google-deepmind.mrs"}
+  openai:          {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/openai.mrs"}
+  anthropic:       {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/anthropic.mrs"}
+  cursor:          {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/cursor.mrs"}
+  github:          {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/github.mrs"}
+  github_copilot:  {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/github-copilot.mrs"}
+  ai:              {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-ai-!cn.mrs"}
+  youtube:         {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/youtube.mrs"}
+  google:          {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/google.mrs"}
+  telegram:        {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/telegram.mrs"}
+  netflix:         {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/netflix.mrs"}
+  microsoft:       {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.mrs"}
+  apple:           {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/apple.mrs"}
+  proxy:           {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/geolocation-!cn.mrs"}
+  cn:              {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/cn.mrs"}
+  private_ip:      {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/private.mrs"}
+  telegram_ip:     {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/telegram.mrs"}
+  google_ip:       {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/google.mrs"}
+  netflix_ip:      {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/netflix.mrs"}
+  cn_ip:           {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/cn.mrs"}
 
 rules:
-  - PROCESS-NAME,winsvc.exe,DIRECT
-  - PROCESS-PATH,J:/app/mihomo/winsvc.exe,DIRECT
   - RULE-SET,private,DIRECT
   - DOMAIN-SUFFIX,hf.co,Hugging Face 模型
   - DOMAIN-KEYWORD,cdn-lfs,Hugging Face 模型
   - DOMAIN-SUFFIX,huggingface.co,Hugging Face
-  - DOMAIN-SUFFIX,github.com,GitHub
-  - DOMAIN-SUFFIX,githubusercontent.com,GitHub
-  - DOMAIN-SUFFIX,githubassets.com,GitHub
-  - DOMAIN-SUFFIX,github.io,GitHub
+  - RULE-SET,google_deepmind,谷歌
+  - DOMAIN,openai-api.arkoselabs.com,OpenAI
+  - RULE-SET,openai,OpenAI
+  - RULE-SET,anthropic,Claude
+  - RULE-SET,cursor,Cursor
+  - RULE-SET,github_copilot,GitHub
+  - RULE-SET,github,GitHub
   - RULE-SET,ads,广告拦截
   - RULE-SET,ai,AI
   - RULE-SET,youtube,油管
