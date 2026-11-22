@@ -35,6 +35,7 @@ proxy-groups:
   - {name: Hugging Face 模型, type: select, proxies: [直连, 自动选择, 节点选择], include-all: true, icon: "/icons/hf.co.model.png"}
   - {name: 微软, type: select, proxies: [自动选择, 节点选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Microsoft.png"}
   - {name: 苹果, type: select, proxies: [自动选择, 节点选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Apple_2.png"}
+  - {name: Steam, type: select, proxies: [直连, 节点选择, 自动选择], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Steam.png"}
   - {name: 广告拦截, type: select, proxies: [REJECT, 自动选择, 节点选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Advertising.png"}
   - {name: 漏网之鱼, type: select, proxies: [节点选择, 自动选择, 直连], include-all: true, icon: "https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Final.png"}
     # DIRECT 是保留字，包一层组才能显示中文
@@ -56,6 +57,7 @@ rule-providers:
   netflix:         {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/netflix.mrs"}
   microsoft:       {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.mrs"}
   apple:           {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/apple.mrs"}
+  steam:           {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/steam.mrs"}
   proxy:           {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/geolocation-!cn.mrs"}
   cn:              {<<: *domain, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/cn.mrs"}
   private_ip:      {<<: *ipcidr, url: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/private.mrs"}
@@ -83,6 +85,7 @@ rules:
   - RULE-SET,netflix,奈飞
   - RULE-SET,microsoft,微软
   - RULE-SET,apple,苹果
+  - RULE-SET,steam,Steam
   - RULE-SET,proxy,节点选择
   - RULE-SET,cn,中国
   - RULE-SET,private_ip,DIRECT,no-resolve
