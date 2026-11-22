@@ -58,7 +58,7 @@
 | [MetaCubeX/meta-rules-dat](https://github.com/MetaCubeX/meta-rules-dat) | 规则来源。mihomo 官方规则数据，每日自动构建，使用 `meta` 分支的 `mrs` 二进制规则集（体积小、加载快） |
 | [v2fly/domain-list-community](https://github.com/v2fly/domain-list-community)、[Loyalsoldier/v2ray-rules-dat](https://github.com/Loyalsoldier/v2ray-rules-dat)、[blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script) | meta-rules-dat 的上游数据源（geosite / geoip） |
 | [jsDelivr](https://www.jsdelivr.com) | GitHub 仓库的 CDN 镜像，默认规则下载地址 |
-| [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo) | 目标客户端内核，支持 `mrs` 规则集、`include-all`、VLESS Reality 等 |
+| [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo) | 目标客户端内核，支持 `mrs` 规则集、`include-all`、VLESS Reality 等；`group=geo` 时作为库实测节点出口 |
 | [go-yaml/yaml](https://github.com/go-yaml/yaml) | YAML 解析 |
 | [ACL4SSR](https://github.com/ACL4SSR/ACL4SSR) / [zsokami/ACL4SSR](https://github.com/zsokami/ACL4SSR) | 分组设计参考 |
 
@@ -137,6 +137,7 @@ go run .
 | `DATA_FILE` | `subs.json`（镜像内 `/data/subs.json`） | token 与订阅地址的映射 |
 | `CACHE_DIR` | `cache`（镜像内 `/data/cache`） | 规则缓存目录 |
 | `RULE_TTL` | `12h` | 规则缓存有效期 |
+| `GEO_DB_URL` | P3TERX `GeoLite2-City.mmdb` | `group=geo` 用的城市级 GeoIP 库，可换成镜像 |
 | `PUBLIC_URL` | 自动识别 | 对外访问地址，例如 `https://sub.example.com`，反向代理后建议设置 |
 | `TEMPLATE` | 内置 `template.yaml` | 外部模板路径，每次请求重新读取，修改无需重启 |
 | `JMS_BW_HOST` | `justmysocks6.net` | JMS 流量查询接口域名，用于在客户端显示已用/总流量 |
@@ -152,6 +153,15 @@ go run .
 - 某源 `upload+download >= total` 或已过 `expire` 时，该源节点整份跳过；客户端流量只叠加仍可用的源。
 - 同一组订阅（含 AUTO 勾选）重复生成得到同一地址。
 - 地址泄露时，输入相同订阅列表点「重置地址」，旧地址立即失效。
+
+### 按城市智能分组（可选）
+
+订阅地址加 `&group=geo`（或打开网页「按城市智能分组」开关）：
+
+- 服务端用 mihomo 内核**真实连接每个节点**取出口 IP，再用本地 **GeoLite2-City**（约 50 MB）翻译国家/城市：按国家生成分组（如 `🇺🇸 美国`），节点改名为「城市 序号」（如 `洛杉矶 01`）。
+- 中转节点也能识别真实落地。探测失败的节点保留原名，归到「其他」分组。
+- 库首次使用时下载到 `CACHE_DIR/GeoLite2-City.mmdb`（缓存 30 天）；探测结果在 `geo.v2.json`（成功 7 天 / 失败 6 小时）。**首次刷新较慢**（并发 32、单节点 8 秒、全程上限 90 秒）。
+- 注意：meta-rules-dat 的 `geoip.metadb` **只有国家码、没有城市**，不要配成 `GEO_DB_URL`。
 
 ### 客户端要求
 

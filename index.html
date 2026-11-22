@@ -239,6 +239,14 @@
       <input type="checkbox" id="local">
       <i></i>
     </label>
+    <label class="switch">
+      <div>
+        <div class="t" data-i18n="geoTitle">Group by city</div>
+        <div class="d" data-i18n="geoDesc">Test each node's exit IP, group by country, rename nodes to city + number.</div>
+      </div>
+      <input type="checkbox" id="geo">
+      <i></i>
+    </label>
   </div>
   <div class="msg" id="msg"></div>
 
@@ -309,6 +317,8 @@
       qr: 'Scan with your phone to import',
       swTitle: 'Download rules from this server',
       swDesc: 'Turn this on if your client cannot reach jsDelivr. Copy the link again after switching.',
+      geoTitle: 'Group by city',
+      geoDesc: 'The server tests each node\'s exit IP, groups nodes by country, and renames them to city + number. First refresh is slow; results are cached.',
       faqTitle: 'Questions',
       q1: 'Which clients work?',
       a1: 'You need a mihomo (Clash Meta) core: Clash Verge Rev on Windows and macOS, FlClash or Clash Meta for Android, and Stash on iOS. Original Clash is unmaintained and does not support protocols such as VLESS.',
@@ -352,6 +362,8 @@
       qr: '手机扫码导入',
       swTitle: '规则文件从本服务器下载',
       swDesc: '客户端访问不了 jsDelivr 时打开。切换后请重新复制地址。',
+      geoTitle: '按城市智能分组',
+      geoDesc: '服务端实测每个节点的出口 IP，按国家分组、节点改名为城市+序号。首次刷新较慢，结果有缓存。',
       faqTitle: '常见问题',
       q1: '支持哪些客户端？',
       a1: '需要 mihomo（Clash Meta）内核：Windows / macOS 用 Clash Verge Rev，Android 用 FlClash 或 Clash Meta for Android，iOS 用 Stash。原版 Clash 已停更，不支持 VLESS 等新协议。',
@@ -403,6 +415,7 @@
   }
 
   $('local').checked = localStorage.getItem('rules') === 'local';
+  $('geo').checked = localStorage.getItem('group') === 'geo';
 
   function addRow(url, auto) {
     const row = document.createElement('div');
@@ -443,6 +456,7 @@
     if (!token) return;
     let q = 'token=' + encodeURIComponent(token) + '&lang=' + lang;
     if ($('local').checked) q += '&rules=local';
+    if ($('geo').checked) q += '&group=geo';
     $('link').value = location.origin + '/clash?' + q;
     if (window.QRCode) QRCode.toCanvas($('qr'), $('link').value, { width: 180, margin: 1 }, () => {});
   }
@@ -485,6 +499,11 @@
   };
   $('local').onchange = () => {
     localStorage.setItem('rules', $('local').checked ? 'local' : '');
+    renderLink();
+    show(i18n[lang].linkUpdated, true);
+  };
+  $('geo').onchange = () => {
+    localStorage.setItem('group', $('geo').checked ? 'geo' : '');
     renderLink();
     show(i18n[lang].linkUpdated, true);
   };
